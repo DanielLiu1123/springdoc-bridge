@@ -1,0 +1,42 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*'
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Check version
+        run: |
+          VERSION_TAG=${{ github.ref_name }}
+          VERSION_TAG=${VERSION_TAG#v}
+          PROJECT_VERSION=$(grep "^version=" gradle.properties | cut -d'=' -f2)
+          if [[ "$PROJECT_VERSION" == "${VERSION_TAG}-SNAPSHOT" ]]; then
+            echo "Version match: tag $VERSION_TAG matches project version $PROJECT_VERSION, proceeding with release"
+          else
+            echo "Version mismatch: tag $VERSION_TAG does not match project version $PROJECT_VERSION"
+            exit 1
+          fi
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'corretto'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build
+        run: ./gradlew build --no-daemon
+
+      - name: Decrypt secring.gpg
+        run: openssl enc -aes-256-cbc -d -pbkdf2 -in private.key.bin -out private.key -pass pass:${{ secrets.privateKeyPassword }}
+
+      - name: Release
+        run: RELEASE=true OSSRH_USER=${{ secrets.OSSRH_USER }} OSSRH_PASSWORD=${{ secrets.OSSRH_PASSWORD }} ./gradlew publish -Psigning.secretKeyRingFile=$(pwd)/private.key -Psigning.keyId=${{ secrets.signKeyId }} -Psigning.password=${{ secrets.signPassword }} --no-daemon
