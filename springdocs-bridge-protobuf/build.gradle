@@ -3,6 +3,8 @@ dependencies {
     compileOnly("org.springdoc:springdoc-openapi-starter-common:${springDocsVersion}")
 
     api("com.google.protobuf:protobuf-java-util:${protobufVersion}")
+
+    compileOnly("com.google.api.grpc:proto-google-common-protos:${protoGoogleCommonProtosVersion}")
 }
 
 apply from: "${rootDir}/gradle/deploy.gradle"

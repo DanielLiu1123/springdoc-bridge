@@ -1,0 +1,116 @@
+syntax = "proto3";
+
+package test.v1;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+
+option java_multiple_files = true;
+option java_package = "test.v1";
+
+// Test message containing all well-known types
+message WellKnownTypesTest {
+  // Timestamp types
+  google.protobuf.Timestamp timestamp_field = 1;
+  google.protobuf.Duration duration_field = 2;
+  
+  // Wrapper types
+  google.protobuf.BoolValue bool_wrapper = 3;
+  google.protobuf.Int32Value int32_wrapper = 4;
+  google.protobuf.Int64Value int64_wrapper = 5;
+  google.protobuf.UInt32Value uint32_wrapper = 6;
+  google.protobuf.UInt64Value uint64_wrapper = 7;
+  google.protobuf.FloatValue float_wrapper = 8;
+  google.protobuf.DoubleValue double_wrapper = 9;
+  google.protobuf.StringValue string_wrapper = 10;
+  google.protobuf.BytesValue bytes_wrapper = 11;
+  
+  // Struct types
+  google.protobuf.Any any_field = 12;
+  google.protobuf.Struct struct_field = 13;
+  google.protobuf.Value value_field = 14;
+  google.protobuf.ListValue list_value_field = 15;
+  google.protobuf.NullValue null_value_field = 16;
+  
+  // Other types
+  google.protobuf.FieldMask field_mask = 17;
+  google.protobuf.Empty empty_field = 18;
+  
+  // Repeated wrapper types
+  repeated google.protobuf.Int64Value repeated_int64_wrapper = 19;
+  repeated google.protobuf.StringValue repeated_string_wrapper = 20;
+  
+  // Map with wrapper types
+  map<string, google.protobuf.Int64Value> map_int64_wrapper = 21;
+  map<string, google.protobuf.Timestamp> map_timestamp = 22;
+}
+
+// Test message for scalar types that should be handled specially
+message ScalarTypesTest {
+  // 64-bit integers (should be strings in JSON)
+  int64 int64_field = 1;
+  uint64 uint64_field = 2;
+  fixed64 fixed64_field = 3;
+  sfixed64 sfixed64_field = 4;
+  sint64 sint64_field = 5;
+  
+  // 32-bit integers (should be numbers in JSON)
+  int32 int32_field = 6;
+  uint32 uint32_field = 7;
+  fixed32 fixed32_field = 8;
+  sfixed32 sfixed32_field = 9;
+  sint32 sint32_field = 10;
+  
+  // Floating point
+  float float_field = 11;
+  double double_field = 12;
+  
+  // Other types
+  bool bool_field = 13;
+  string string_field = 14;
+  bytes bytes_field = 15;
+  
+  // Repeated 64-bit integers
+  repeated int64 repeated_int64 = 16;
+  repeated uint64 repeated_uint64 = 17;
+  
+  // Map with 64-bit integers
+  map<string, int64> map_int64 = 18;
+  map<string, uint64> map_uint64 = 19;
+  
+  // Bytes field
+  bytes binary_data = 20;
+}
+
+// Test enum
+enum TestEnum {
+  TEST_ENUM_UNSPECIFIED = 0;
+  OPTION_ONE = 1;
+  OPTION_TWO = 2;
+  OPTION_THREE = 3;
+}
+
+// Test message with enums
+message EnumTypesTest {
+  TestEnum enum_field = 1;
+  repeated TestEnum repeated_enum = 2;
+  map<string, TestEnum> map_enum = 3;
+}
+
+// Request/Response messages for testing
+message WellKnownTypesRequest {
+  WellKnownTypesTest test_data = 1;
+  ScalarTypesTest scalar_data = 2;
+  EnumTypesTest enum_data = 3;
+}
+
+message WellKnownTypesResponse {
+  WellKnownTypesTest result = 1;
+  string message = 2;
+  optional google.protobuf.Timestamp processed_at = 3;
+}

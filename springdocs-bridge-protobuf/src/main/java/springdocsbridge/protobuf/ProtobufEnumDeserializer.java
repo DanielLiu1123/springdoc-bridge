@@ -10,11 +10,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
-/**
- * Protobuf enum deserializer, unrecognized number will be deserialized as UNRECOGNIZED.
- *
- * @param <T> protobuf enum type
- */
 final class ProtobufEnumDeserializer<T extends Enum<T> & ProtocolMessageEnum> extends JsonDeserializer<T> {
 
     private final Class<T> clazz;

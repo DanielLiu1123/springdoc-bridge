@@ -37,6 +37,11 @@ public class SpringDocsBridgeProtobufAutoConfiguration implements SmartInitializ
         return builder -> builder.modules(new ProtobufMarshallingModule());
     }
 
+    @Bean
+    public ProtobufWellKnownTypeModelConverter protobufWellKnownTypeModelConverter() {
+        return new ProtobufWellKnownTypeModelConverter(objectMapperProvider);
+    }
+
     @Override
     public void afterSingletonsInstantiated() {
         var objectMapper = objectMapperProvider.jsonMapper();
