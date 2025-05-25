@@ -13,6 +13,7 @@ import com.google.protobuf.FloatValue;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.Int64Value;
 import com.google.protobuf.ListValue;
+import com.google.protobuf.Message;
 import com.google.protobuf.NullValue;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.protobuf.StringValue;
@@ -71,6 +72,34 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
             }
             if (ProtocolMessageEnum.class.isAssignableFrom(cls) && cls.isEnum()) {
                 return createProtobufEnumSchema(cls);
+            }
+            if (Message.class.isAssignableFrom(cls)) {
+                var schema = chain.hasNext() ? chain.next().resolve(type, context, chain) : null;
+                if (schema == null) {
+                    return null;
+                }
+
+                var descriptor = ProtobufTypeNameResolver.getDescriptor(cls);
+                if (descriptor == null) {
+                    return schema;
+                }
+
+                Map<String, Schema> properties = schema.getProperties() != null ? schema.getProperties() : Map.of();
+
+                for (var field : descriptor.getFields()) {
+                    if (!field.toProto().getProto3Optional()) {
+                        continue;
+                    }
+                    var s = properties.get(field.getName());
+                    if (s == null) {
+                        s = properties.get(field.getJsonName());
+                    }
+                    if (s != null) {
+                        s.setNullable(true);
+                    }
+                }
+
+                return schema;
             }
         }
         return chain.hasNext() ? chain.next().resolve(type, context, chain) : null;

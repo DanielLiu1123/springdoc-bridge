@@ -62,9 +62,11 @@ final class ProtobufClassIntrospector extends BasicClassIntrospector {
                 continue;
             }
 
+            Descriptors.FieldDescriptor fieldDescriptor = types.get(name);
+
             if (p.hasField()
                     && p.getField().getType().isJavaLangObject()
-                    && types.get(name).getType().equals(Descriptors.FieldDescriptor.Type.STRING)) {
+                    && fieldDescriptor.getType().equals(Descriptors.FieldDescriptor.Type.STRING)) {
                 addStringFormatAnnotation(p);
             }
 
@@ -75,12 +77,15 @@ final class ProtobufClassIntrospector extends BasicClassIntrospector {
     }
 
     @JsonFormat(shape = JsonFormat.Shape.STRING)
-    private static class AnnotationHelper {}
+    private static class StringFormatAnnotationHelper {}
 
     private static void addStringFormatAnnotation(BeanPropertyDefinition p) {
-        JsonFormat annotation = AnnotationHelper.class.getAnnotation(JsonFormat.class);
+        JsonFormat annotation = StringFormatAnnotationHelper.class.getAnnotation(JsonFormat.class);
         if (annotation != null) {
-            p.getField().getAllAnnotations().addIfNotPresent(annotation);
+            var field = p.getField();
+            if (field != null) {
+                field.getAllAnnotations().addIfNotPresent(annotation);
+            }
         }
     }
 
