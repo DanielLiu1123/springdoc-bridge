@@ -5,6 +5,7 @@ import com.google.protobuf.Any;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
+import com.google.protobuf.Descriptors;
 import com.google.protobuf.DoubleValue;
 import com.google.protobuf.Duration;
 import com.google.protobuf.Empty;
@@ -78,14 +79,12 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
                 if (schema == null) {
                     return null;
                 }
-
                 var descriptor = ProtobufTypeNameResolver.getDescriptor(cls);
                 if (descriptor == null) {
                     return schema;
                 }
 
-                // Handle optional fields
-                processOptionalFields(schema, descriptor, context, cls);
+                processFields(schema, descriptor, context);
 
                 return schema;
             }
@@ -93,49 +92,43 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
         return chain.hasNext() ? chain.next().resolve(type, context, chain) : null;
     }
 
-    private void processOptionalFields(
-            Schema<?> schema,
-            com.google.protobuf.Descriptors.Descriptor descriptor,
-            ModelConverterContext context,
-            Class<?> cls) {
-        // If schema has properties directly, modify them
-        if (schema.getProperties() != null) {
-            Map<String, Schema> properties = schema.getProperties();
-            for (var field : descriptor.getFields()) {
-                if (!field.toProto().getProto3Optional()) {
-                    continue;
-                }
-                var s = properties.get(field.getName());
-                if (s == null) {
-                    s = properties.get(field.getJsonName());
-                }
-                if (s != null) {
-                    s.setNullable(true);
-                }
-            }
-        }
-        // If schema is a reference, try to resolve and modify the referenced schema
-        else if (schema.get$ref() != null) {
+    private static void processFields(
+            Schema<?> schema, com.google.protobuf.Descriptors.Descriptor descriptor, ModelConverterContext context) {
+        if (schema.get$ref() != null) {
             String ref = schema.get$ref();
             // Extract schema name from $ref (e.g., "#/components/schemas/user.v1.PatchUserRequest")
             String schemaName = ref.substring(ref.lastIndexOf('/') + 1);
 
-            // Get the resolved schema from context
             var resolvedSchema = context.getDefinedModels().get(schemaName);
-            if (resolvedSchema != null && resolvedSchema.getProperties() != null) {
-                Map<String, Schema> properties = resolvedSchema.getProperties();
-                for (var field : descriptor.getFields()) {
-                    if (!field.toProto().getProto3Optional()) {
-                        continue;
-                    }
-                    var s = properties.get(field.getName());
-                    if (s == null) {
-                        s = properties.get(field.getJsonName());
-                    }
-                    if (s != null) {
-                        s.setNullable(true);
-                    }
-                }
+            if (resolvedSchema != null) {
+                handleField(descriptor, resolvedSchema);
+            }
+        } else if (schema.getProperties() != null) {
+            handleField(descriptor, schema);
+        }
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static void handleField(Descriptors.Descriptor descriptor, Schema resolvedSchema) {
+        Map<String, Schema> properties = resolvedSchema.getProperties();
+        if (properties == null || properties.isEmpty()) {
+            return;
+        }
+        for (var field : descriptor.getFields()) {
+            if (field.toProto().getProto3Optional()) {
+                continue;
+            }
+
+            String propertyName = field.getName();
+            var propertyValue = properties.get(propertyName);
+            if (propertyValue == null) {
+                propertyName = field.getJsonName();
+                propertyValue = properties.get(propertyName);
+            }
+            if (propertyValue != null) {
+                // OpenAPI 3.x all fields are optional by default, so we need to add required fields manually
+                // see https://spec.openapis.org/oas/v3.0.0.html#schema
+                resolvedSchema.addRequiredItem(propertyName);
             }
         }
     }
