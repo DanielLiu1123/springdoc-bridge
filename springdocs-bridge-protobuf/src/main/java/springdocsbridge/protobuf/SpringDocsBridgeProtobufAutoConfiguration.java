@@ -4,7 +4,7 @@ import com.google.protobuf.util.JsonFormat;
 import org.springdoc.core.configuration.SpringDocConfiguration;
 import org.springdoc.core.properties.SpringDocConfigProperties;
 import org.springdoc.core.providers.ObjectMapperProvider;
-import org.springframework.beans.factory.SmartInitializingSingleton;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -21,7 +21,7 @@ import org.springframework.context.annotation.Bean;
     JsonFormat.class // protobuf-java-util
 })
 @ConditionalOnBean(SpringDocConfigProperties.class) // springdoc enabled
-public class SpringDocsBridgeProtobufAutoConfiguration implements SmartInitializingSingleton {
+public class SpringDocsBridgeProtobufAutoConfiguration implements InitializingBean {
 
     private final ObjectMapperProvider objectMapperProvider;
 
@@ -43,7 +43,7 @@ public class SpringDocsBridgeProtobufAutoConfiguration implements SmartInitializ
     }
 
     @Override
-    public void afterSingletonsInstantiated() {
+    public void afterPropertiesSet() throws Exception {
         var objectMapper = objectMapperProvider.jsonMapper();
 
         // Make SpringDoc support protobuf message for generating OpenAPI schema.

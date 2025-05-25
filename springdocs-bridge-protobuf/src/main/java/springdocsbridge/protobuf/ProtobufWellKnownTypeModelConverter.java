@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.springdoc.core.providers.ObjectMapperProvider;
 import org.springframework.util.ClassUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * Protobuf type schema customizer that implements the protobuf JSON mapping rules
@@ -63,38 +64,45 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
     @Override
     public Schema<?> resolve(AnnotatedType type, ModelConverterContext context, Iterator<ModelConverter> chain) {
         JavaType javaType = springDocObjectMapper.jsonMapper().constructType(type.getType());
-        if (javaType != null) {
-            Class<?> cls = javaType.getRawClass();
-            if (WELL_KNOWN_TYPE_SCHEMAS.containsKey(cls)) {
-                return WELL_KNOWN_TYPE_SCHEMAS.get(cls);
-            }
-            if (SPECIAL_TYPE_SCHEMAS.containsKey(cls)) {
-                return SPECIAL_TYPE_SCHEMAS.get(cls);
-            }
-            if (ProtocolMessageEnum.class.isAssignableFrom(cls) && cls.isEnum()) {
-                return createProtobufEnumSchema(cls);
-            }
-            if (Message.class.isAssignableFrom(cls)) {
-                var schema = chain.hasNext() ? chain.next().resolve(type, context, chain) : null;
-                if (schema == null) {
-                    return null;
-                }
-                var descriptor = ProtobufTypeNameResolver.getDescriptor(cls);
-                if (descriptor == null) {
-                    return schema;
-                }
+        if (javaType == null) {
+            return chain.hasNext() ? chain.next().resolve(type, context, chain) : null;
+        }
 
+        Class<?> cls = javaType.getRawClass();
+
+        // Handle well-known types
+        if (WELL_KNOWN_TYPE_SCHEMAS.containsKey(cls)) {
+            return WELL_KNOWN_TYPE_SCHEMAS.get(cls);
+        }
+        if (SPECIAL_TYPE_SCHEMAS.containsKey(cls)) {
+            return SPECIAL_TYPE_SCHEMAS.get(cls);
+        }
+
+        // Handle protobuf enums
+        if (ProtocolMessageEnum.class.isAssignableFrom(cls) && cls.isEnum()) {
+            return createProtobufEnumSchema(cls);
+        }
+
+        // Parse protobuf message
+        var schema = chain.hasNext() ? chain.next().resolve(type, context, chain) : null;
+        if (schema == null) {
+            return null;
+        }
+
+        // Handle fields, set required fields
+        if (Message.class.isAssignableFrom(cls)) {
+            var descriptor = ProtobufTypeNameResolver.getDescriptor(cls);
+            if (descriptor != null) {
                 processFields(schema, descriptor, context);
-
-                return schema;
             }
         }
-        return chain.hasNext() ? chain.next().resolve(type, context, chain) : null;
+
+        return schema;
     }
 
     private static void processFields(
             Schema<?> schema, com.google.protobuf.Descriptors.Descriptor descriptor, ModelConverterContext context) {
-        if (schema.get$ref() != null) {
+        if (StringUtils.hasText(schema.get$ref())) {
             String ref = schema.get$ref();
             // Extract schema name from $ref (e.g., "#/components/schemas/user.v1.PatchUserRequest")
             String schemaName = ref.substring(ref.lastIndexOf('/') + 1);

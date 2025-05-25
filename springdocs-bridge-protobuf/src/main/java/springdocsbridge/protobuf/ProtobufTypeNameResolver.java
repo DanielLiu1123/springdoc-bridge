@@ -3,6 +3,7 @@ package springdocsbridge.protobuf;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
 import io.swagger.v3.core.jackson.TypeNameResolver;
+import jakarta.annotation.Nullable;
 import org.springframework.util.ReflectionUtils;
 
 /**
@@ -20,6 +21,7 @@ final class ProtobufTypeNameResolver extends TypeNameResolver {
         return super.getNameOfClass(cls);
     }
 
+    @Nullable
     static Descriptors.Descriptor getDescriptor(Class<?> cls) {
         if (Message.class.isAssignableFrom(cls)) {
             var m = ReflectionUtils.findMethod(cls, "getDescriptor");
