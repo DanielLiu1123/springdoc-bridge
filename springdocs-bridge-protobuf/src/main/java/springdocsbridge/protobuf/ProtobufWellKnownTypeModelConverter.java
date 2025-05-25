@@ -84,8 +84,46 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
                     return schema;
                 }
 
-                Map<String, Schema> properties = schema.getProperties() != null ? schema.getProperties() : Map.of();
+                // Handle optional fields
+                processOptionalFields(schema, descriptor, context, cls);
 
+                return schema;
+            }
+        }
+        return chain.hasNext() ? chain.next().resolve(type, context, chain) : null;
+    }
+
+    private void processOptionalFields(
+            Schema<?> schema,
+            com.google.protobuf.Descriptors.Descriptor descriptor,
+            ModelConverterContext context,
+            Class<?> cls) {
+        // If schema has properties directly, modify them
+        if (schema.getProperties() != null) {
+            Map<String, Schema> properties = schema.getProperties();
+            for (var field : descriptor.getFields()) {
+                if (!field.toProto().getProto3Optional()) {
+                    continue;
+                }
+                var s = properties.get(field.getName());
+                if (s == null) {
+                    s = properties.get(field.getJsonName());
+                }
+                if (s != null) {
+                    s.setNullable(true);
+                }
+            }
+        }
+        // If schema is a reference, try to resolve and modify the referenced schema
+        else if (schema.get$ref() != null) {
+            String ref = schema.get$ref();
+            // Extract schema name from $ref (e.g., "#/components/schemas/user.v1.PatchUserRequest")
+            String schemaName = ref.substring(ref.lastIndexOf('/') + 1);
+
+            // Get the resolved schema from context
+            var resolvedSchema = context.getDefinedModels().get(schemaName);
+            if (resolvedSchema != null && resolvedSchema.getProperties() != null) {
+                Map<String, Schema> properties = resolvedSchema.getProperties();
                 for (var field : descriptor.getFields()) {
                     if (!field.toProto().getProto3Optional()) {
                         continue;
@@ -98,11 +136,8 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
                         s.setNullable(true);
                     }
                 }
-
-                return schema;
             }
         }
-        return chain.hasNext() ? chain.next().resolve(type, context, chain) : null;
     }
 
     private static Map<Class<?>, Schema<?>> createWellKnownTypeSchemas() {
