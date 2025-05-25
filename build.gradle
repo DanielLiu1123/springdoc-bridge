@@ -30,6 +30,14 @@ allprojects {
         options.compilerArgs << "-parameters"
     }
 
+    dependencies {
+        compileOnly("org.projectlombok:lombok:${lombokVersion}")
+        annotationProcessor("org.projectlombok:lombok:${lombokVersion}")
+        testCompileOnly("org.projectlombok:lombok:${lombokVersion}")
+        testAnnotationProcessor("org.projectlombok:lombok:${lombokVersion}")
+        compileOnly("com.github.spotbugs:spotbugs-annotations:${spotbugsAnnotationsVersion}")
+    }
+
     test {
         useJUnitPlatform()
         dependencies {

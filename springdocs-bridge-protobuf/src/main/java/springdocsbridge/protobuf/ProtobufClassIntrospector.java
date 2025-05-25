@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.introspect.BasicClassIntrospector;
 import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -21,6 +22,7 @@ import org.springframework.util.ReflectionUtils;
 /**
  * @author Freeman
  */
+@SuppressFBWarnings("SE_BAD_FIELD")
 final class ProtobufClassIntrospector extends BasicClassIntrospector {
 
     private final Map<Class<?>, Map<String, Descriptors.FieldDescriptor>> cache = new ConcurrentHashMap<>();

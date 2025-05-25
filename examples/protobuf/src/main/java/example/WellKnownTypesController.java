@@ -7,12 +7,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import test.v1.EnumTypesTest;
-import test.v1.ScalarTypesTest;
-import test.v1.TestEnum;
-import test.v1.WellKnownTypesRequest;
-import test.v1.WellKnownTypesResponse;
-import test.v1.WellKnownTypesTest;
+import wellknown.v1.EnumTypesTest;
+import wellknown.v1.ScalarTypesTest;
+import wellknown.v1.TestEnum;
+import wellknown.v1.WellKnownTypesRequest;
+import wellknown.v1.WellKnownTypesResponse;
+import wellknown.v1.WellKnownTypesTest;
 
 /**
  * Controller for testing protobuf well-known types and their OpenAPI schema generation

@@ -172,7 +172,7 @@ class ProtobufAppIT {
         void wellKnownTypesSchemaIsCorrect() throws IOException {
             // Given
             JsonNode apiDocs = getApiDocs();
-            JsonNode wellKnownSchema = apiDocs.get("components").get("schemas").get("test.v1.WellKnownTypesTest");
+            JsonNode wellKnownSchema = apiDocs.get("components").get("schemas").get("wellknown.v1.WellKnownTypesTest");
 
             // Then
             assertThat(wellKnownSchema).isNotNull();
@@ -214,7 +214,7 @@ class ProtobufAppIT {
         void scalarTypesSchemaIsCorrect() throws IOException {
             // Given
             JsonNode apiDocs = getApiDocs();
-            JsonNode scalarSchema = apiDocs.get("components").get("schemas").get("test.v1.ScalarTypesTest");
+            JsonNode scalarSchema = apiDocs.get("components").get("schemas").get("wellknown.v1.ScalarTypesTest");
 
             // Then
             assertThat(scalarSchema).isNotNull();
@@ -322,9 +322,9 @@ class ProtobufAppIT {
 
     private void verifyWellKnownTypesSchemas(JsonNode schemas) {
         // Verify well-known types schemas exist
-        assertThat(schemas.has("test.v1.WellKnownTypesTest")).isTrue();
-        assertThat(schemas.has("test.v1.ScalarTypesTest")).isTrue();
-        assertThat(schemas.has("test.v1.EnumTypesTest")).isTrue();
+        assertThat(schemas.has("wellknown.v1.WellKnownTypesTest")).isTrue();
+        assertThat(schemas.has("wellknown.v1.ScalarTypesTest")).isTrue();
+        assertThat(schemas.has("wellknown.v1.EnumTypesTest")).isTrue();
     }
 
     private void verifyJavaProtobufMixedSchemas(JsonNode schemas) {
