@@ -5,6 +5,11 @@ dependencies {
     api("com.google.protobuf:protobuf-java-util:${protobufVersion}")
 
     compileOnly("com.google.api.grpc:proto-google-common-protos:${protoGoogleCommonProtosVersion}")
+
+    // Test dependencies
+    testImplementation("org.springframework.boot:spring-boot-starter-test:${springBootVersion}")
+    testImplementation("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
+    testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${springDocsVersion}")
 }
 
 apply from: "${rootDir}/gradle/deploy.gradle"
