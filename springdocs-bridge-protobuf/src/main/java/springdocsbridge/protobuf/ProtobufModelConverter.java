@@ -1,19 +1,15 @@
 package springdocsbridge.protobuf;
 
 import com.fasterxml.jackson.databind.JavaType;
-import com.google.protobuf.Descriptors;
-import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import io.swagger.v3.core.converter.AnnotatedType;
 import io.swagger.v3.core.converter.ModelConverter;
 import io.swagger.v3.core.converter.ModelConverterContext;
 import io.swagger.v3.oas.models.media.Schema;
-import jakarta.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Objects;
 import org.springdoc.core.providers.ObjectMapperProvider;
-import org.springframework.util.ReflectionUtils;
 
 /**
  * @author Freeman
@@ -48,7 +44,7 @@ class ProtobufModelConverter implements ModelConverter {
     }
 
     private static void setRequiredParameter(Schema<?> schema, JavaType javaType) {
-        var descriptor = getDescriptor(javaType.getRawClass());
+        var descriptor = ProtobufTypeNameResolver.getDescriptor(javaType.getRawClass());
         if (descriptor == null) {
             return;
         }
@@ -73,19 +69,5 @@ class ProtobufModelConverter implements ModelConverter {
             newList.removeIf("UNRECOGNIZED"::equals);
             schema.setEnum(newList);
         }
-    }
-
-    @Nullable
-    static Descriptors.Descriptor getDescriptor(Class<?> cls) {
-        if (Message.class.isAssignableFrom(cls)) {
-            var m = ReflectionUtils.findMethod(cls, "getDescriptor");
-            if (m != null) {
-                var result = ReflectionUtils.invokeMethod(m, null);
-                if (result instanceof Descriptors.Descriptor desc) {
-                    return desc;
-                }
-            }
-        }
-        return null;
     }
 }
