@@ -91,7 +91,7 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
 
         // Handle fields, set required fields
         if (Message.class.isAssignableFrom(cls)) {
-            var descriptor = ProtobufTypeNameResolver.getDescriptor(cls);
+            var descriptor = ProtobufNameResolver.getDescriptor(cls);
             if (descriptor != null) {
                 processFields(schema, descriptor, context);
             }
