@@ -1,9 +1,16 @@
+plugins {
+    id "org.springframework.boot"
+}
+
 dependencies {
     // protobuf-java
     implementation("com.google.protobuf:protobuf-java:${protobufVersion}")
-    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${springDocsVersion}")
     implementation(project(":springdocs-bridge-protobuf"))
+
+    compileOnly("org.projectlombok:lombok:${lombokVersion}")
+    annotationProcessor("org.projectlombok:lombok:${lombokVersion}")
 }
 
 apply from: "${rootDir}/gradle/protobuf.gradle"

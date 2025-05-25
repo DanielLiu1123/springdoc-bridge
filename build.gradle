@@ -35,23 +35,8 @@ allprojects {
         useJUnitPlatform()
         dependencies {
             // https://docs.gradle.org/current/userguide/upgrading_version_8.html#test_framework_implementation_dependencies
-            testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+            testRuntimeOnly("org.junit.platform:junit-platform-launcher:${junitPlatformVersion}")
         }
-    }
-
-    apply plugin: "io.spring.dependency-management"
-    dependencyManagement {
-        imports {
-            mavenBom "org.springframework.boot:spring-boot-dependencies:${springBootVersion}"
-        }
-    }
-
-    dependencies {
-        compileOnly("org.projectlombok:lombok")
-        annotationProcessor("org.projectlombok:lombok")
-        testCompileOnly("org.projectlombok:lombok")
-        testAnnotationProcessor("org.projectlombok:lombok")
-        compileOnly("com.github.spotbugs:spotbugs-annotations:${spotbugsAnnotationsVersion}")
     }
 
     // spotless

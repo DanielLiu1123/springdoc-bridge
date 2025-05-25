@@ -1,9 +1,12 @@
 package springdocsbridge.protobuf;
 
+import com.google.protobuf.util.JsonFormat;
+import org.springdoc.core.configuration.SpringDocConfiguration;
 import org.springdoc.core.properties.SpringDocConfigProperties;
 import org.springdoc.core.providers.ObjectMapperProvider;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
@@ -11,34 +14,34 @@ import org.springframework.context.annotation.Bean;
 /**
  * @author Freeman
  */
-@AutoConfiguration
-@ConditionalOnClass(
-        name = {
-            "org.springdoc.core.configuration.SpringDocConfiguration", // springdoc-openapi-starter-common
-            "com.google.protobuf.util.JsonFormat" // protobuf-java-util
-        })
+@AutoConfiguration(after = SpringDocConfiguration.class)
+@ConditionalOnClass({
+    Jackson2ObjectMapperBuilderCustomizer.class, // spring-boot-autoconfigure
+    SpringDocConfiguration.class, // springdoc-openapi-starter-common
+    JsonFormat.class // protobuf-java-util
+})
+@ConditionalOnBean(SpringDocConfigProperties.class) // springdoc enabled
 public class SpringDocsBridgeProtobufAutoConfiguration implements SmartInitializingSingleton {
 
     private final ObjectMapperProvider objectMapperProvider;
-    private final SpringDocConfigProperties springDocConfigProperties;
 
-    public SpringDocsBridgeProtobufAutoConfiguration(
-            ObjectMapperProvider objectMapperProvider, SpringDocConfigProperties springDocConfigProperties) {
+    public SpringDocsBridgeProtobufAutoConfiguration(ObjectMapperProvider objectMapperProvider) {
         this.objectMapperProvider = objectMapperProvider;
-        this.springDocConfigProperties = springDocConfigProperties;
     }
 
     /**
-     * Make Jackson support protobuf message.
+     * Make Jackson support protobuf message for serialization and deserialization.
      */
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer springDocsBridgeProtobufJackson2ObjectMapperBuilderCustomizer() {
-        return builder -> builder.modules(new ProtobufModule());
+        return builder -> builder.modules(new ProtobufMarshallingModule());
     }
 
     @Override
     public void afterSingletonsInstantiated() {
         var objectMapper = objectMapperProvider.jsonMapper();
-        objectMapper.registerModule(new ProtobufModule());
+
+        // Make SpringDoc support protobuf message for generating OpenAPI schema.
+        objectMapper.registerModules(new ProtobufSchemaModule());
     }
 }

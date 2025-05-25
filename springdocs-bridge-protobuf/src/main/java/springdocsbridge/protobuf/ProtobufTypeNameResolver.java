@@ -8,7 +8,7 @@ import org.springframework.util.ReflectionUtils;
 /**
  * @author Freeman
  */
-class ProtobufTypeNameResolver extends TypeNameResolver {
+final class ProtobufTypeNameResolver extends TypeNameResolver {
     @Override
     protected String getNameOfClass(Class<?> cls) {
         if (Message.class.isAssignableFrom(cls)) {

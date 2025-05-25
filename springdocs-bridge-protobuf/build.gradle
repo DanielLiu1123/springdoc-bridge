@@ -1,7 +1,5 @@
 dependencies {
-    // add spring boot web
-    compileOnly("org.springframework.boot:spring-boot-starter-web")
-    // add springdoc openapi
+    compileOnly("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
     compileOnly("org.springdoc:springdoc-openapi-starter-common:${springDocsVersion}")
 
     api("com.google.protobuf:protobuf-java-util:${protobufVersion}")

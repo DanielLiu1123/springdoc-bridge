@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.ser.Serializers;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.ProtocolMessageEnum;
 
-final class ProtobufModule extends SimpleModule {
+final class ProtobufMarshallingModule extends SimpleModule {
     @Override
     public void setupModule(SetupContext context) {
         context.addSerializers(new Serializers.Base() {
