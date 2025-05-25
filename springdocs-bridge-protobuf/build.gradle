@@ -4,3 +4,5 @@ dependencies {
 
     api("com.google.protobuf:protobuf-java-util:${protobufVersion}")
 }
+
+apply from: "${rootDir}/gradle/deploy.gradle"
