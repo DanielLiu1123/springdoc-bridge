@@ -1,5 +1,5 @@
 dependencies {
-    api("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
+    compileOnly("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
     api("com.google.protobuf:protobuf-java-util:${protobufVersion}")
 }
 
