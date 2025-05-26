@@ -1,4 +1,4 @@
-package springdocsbridge.protobuf;
+package jacksondataformat.protobuf;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -8,7 +8,7 @@ import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.util.JsonFormat;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import org.springframework.util.ReflectionUtils;
+import java.lang.reflect.Method;
 
 /**
  * Protobuf message deserializer, use {@link JsonFormat#parser()} to deserialize protobuf message.
@@ -32,7 +32,7 @@ final class ProtobufMessageDeserializer<T extends MessageOrBuilder> extends Json
 
         String json = treeNode.toString();
 
-        var newBuilderMethod = ReflectionUtils.findMethod(clazz, "newBuilder");
+        var newBuilderMethod = findMethod(clazz, "newBuilder");
         if (newBuilderMethod == null) {
             throw new IllegalStateException("No newBuilder method found for class " + clazz);
         }
@@ -48,6 +48,14 @@ final class ProtobufMessageDeserializer<T extends MessageOrBuilder> extends Json
             return result;
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new IllegalStateException("Failed to deserialize protobuf message", e);
+        }
+    }
+
+    private static Method findMethod(Class<?> clazz, String name, Class<?>... parameterTypes) {
+        try {
+            return clazz.getMethod(name, parameterTypes);
+        } catch (NoSuchMethodException e) {
+            return null;
         }
     }
 }

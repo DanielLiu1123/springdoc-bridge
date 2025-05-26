@@ -1,6 +1,7 @@
-package springdocsbridge.protobuf;
+package springdocbridge.protobuf;
 
 import com.google.protobuf.util.JsonFormat;
+import jacksondataformat.protobuf.ProtobufModule;
 import org.springdoc.core.configuration.SpringDocConfiguration;
 import org.springdoc.core.properties.SpringDocConfigProperties;
 import org.springdoc.core.providers.ObjectMapperProvider;
@@ -21,11 +22,11 @@ import org.springframework.context.annotation.Bean;
     JsonFormat.class // protobuf-java-util
 })
 @ConditionalOnBean(SpringDocConfigProperties.class) // springdoc enabled
-public class SpringDocsBridgeProtobufAutoConfiguration implements InitializingBean {
+public class SpringDocBridgeProtobufAutoConfiguration implements InitializingBean {
 
     private final ObjectMapperProvider objectMapperProvider;
 
-    public SpringDocsBridgeProtobufAutoConfiguration(ObjectMapperProvider objectMapperProvider) {
+    public SpringDocBridgeProtobufAutoConfiguration(ObjectMapperProvider objectMapperProvider) {
         this.objectMapperProvider = objectMapperProvider;
     }
 
@@ -33,8 +34,8 @@ public class SpringDocsBridgeProtobufAutoConfiguration implements InitializingBe
      * Make Jackson support protobuf message for serialization and deserialization.
      */
     @Bean
-    public Jackson2ObjectMapperBuilderCustomizer springDocsBridgeProtobufJackson2ObjectMapperBuilderCustomizer() {
-        return builder -> builder.modules(new ProtobufMarshallingModule());
+    public Jackson2ObjectMapperBuilderCustomizer springDocBridgeProtobufJackson2ObjectMapperBuilderCustomizer() {
+        return builder -> builder.modules(new ProtobufModule());
     }
 
     @Bean
@@ -43,7 +44,7 @@ public class SpringDocsBridgeProtobufAutoConfiguration implements InitializingBe
     }
 
     @Override
-    public void afterPropertiesSet() throws Exception {
+    public void afterPropertiesSet() {
         var objectMapper = objectMapperProvider.jsonMapper();
 
         // Make SpringDoc support protobuf message for generating OpenAPI schema.

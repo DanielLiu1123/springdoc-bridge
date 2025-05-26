@@ -1,4 +1,4 @@
-package springdocsbridge.protobuf;
+package springdocbridge.protobuf;
 
 import com.fasterxml.jackson.databind.module.SimpleModule;
 

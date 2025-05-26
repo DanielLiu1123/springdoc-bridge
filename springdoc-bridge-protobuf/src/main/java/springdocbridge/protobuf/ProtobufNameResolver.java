@@ -1,4 +1,4 @@
-package springdocsbridge.protobuf;
+package springdocbridge.protobuf;
 
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;

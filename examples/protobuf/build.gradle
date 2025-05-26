@@ -7,7 +7,7 @@ dependencies {
     implementation("com.google.protobuf:protobuf-java:${protobufVersion}")
     implementation("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${springDocsVersion}")
-    implementation(project(":springdocs-bridge-protobuf"))
+    implementation(project(":springdoc-bridge-protobuf"))
 
     // Test dependencies
     testImplementation("org.springframework.boot:spring-boot-starter-test:${springBootVersion}")

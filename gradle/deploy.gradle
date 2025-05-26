@@ -11,7 +11,7 @@ tasks.register('sourcesJar', Jar) {
     archiveClassifier.set('sources')
 }
 
-def githubUrl = 'https://github.com/DanielLiu1123/springdocs-bridge'
+def githubUrl = 'https://github.com/DanielLiu1123/springdoc-bridge'
 
 publishing {
     publications {

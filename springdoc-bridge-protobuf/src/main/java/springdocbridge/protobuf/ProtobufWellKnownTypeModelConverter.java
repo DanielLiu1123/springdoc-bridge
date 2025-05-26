@@ -1,4 +1,4 @@
-package springdocsbridge.protobuf;
+package springdocbridge.protobuf;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.google.protobuf.Any;
@@ -23,7 +23,6 @@ import com.google.protobuf.Timestamp;
 import com.google.protobuf.UInt32Value;
 import com.google.protobuf.UInt64Value;
 import com.google.protobuf.Value;
-import com.google.type.Date;
 import io.swagger.v3.core.converter.AnnotatedType;
 import io.swagger.v3.core.converter.ModelConverter;
 import io.swagger.v3.core.converter.ModelConverterContext;
@@ -41,7 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.springdoc.core.providers.ObjectMapperProvider;
-import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -191,19 +189,7 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
         // ByteString: base64 string
         map.put(ByteString.class, createByteStringSchema());
 
-        // Date: string with "yyyy-MM-dd" format
-        if (ClassUtils.isPresent("com.google.type.Date", null)) {
-            map.put(Date.class, createDateSchema());
-        }
-
         return Map.copyOf(map);
-    }
-
-    private static Schema<?> createDateSchema() {
-        StringSchema schema = new StringSchema();
-        schema.setFormat("date");
-        schema.setExample("1970-01-01");
-        return schema;
     }
 
     static Schema<?> createTimestampSchema() {

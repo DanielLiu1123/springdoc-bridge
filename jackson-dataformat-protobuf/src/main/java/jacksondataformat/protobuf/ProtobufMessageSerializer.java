@@ -1,4 +1,4 @@
-package springdocsbridge.protobuf;
+package jacksondataformat.protobuf;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;

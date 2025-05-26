@@ -1,8 +1,9 @@
-rootProject.name = 'springdocs-bridge'
+rootProject.name = 'springdoc-bridge'
 
 include(":examples:protobuf")
 
-include(":springdocs-bridge-protobuf")
+include(":jackson-dataformat-protobuf")
+include(":springdoc-bridge-protobuf")
 
 java.util.Optional.of(new File("${rootDir}/.git/hooks")).filter { it.exists() && it.isDirectory() }.ifPresent {
     new File("${rootDir}/.githooks").eachFile(groovy.io.FileType.FILES) {

@@ -1,4 +1,4 @@
-package springdocsbridge.protobuf;
+package jacksondataformat.protobuf;
 
 import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationConfig;
@@ -13,7 +13,12 @@ import com.fasterxml.jackson.databind.ser.Serializers;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.ProtocolMessageEnum;
 
-final class ProtobufMarshallingModule extends SimpleModule {
+/**
+ * Jackson module for Protobuf message and enum serialization and deserialization.
+ *
+ * @author Freeman
+ */
+public final class ProtobufModule extends SimpleModule {
     @Override
     public void setupModule(SetupContext context) {
         context.addSerializers(new Serializers.Base() {
