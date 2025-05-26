@@ -43,10 +43,54 @@ import org.springdoc.core.providers.ObjectMapperProvider;
 import org.springframework.util.StringUtils;
 
 /**
- * Protobuf type schema customizer that implements the protobuf JSON mapping rules
- * according to https://protobuf.dev/programming-guides/json/
+ * OpenAPI model converter that provides specialized schema generation for Protocol Buffers (protobuf)
+ * well-known types and custom protobuf messages.
+ *
+ * <p>This converter implements the official protobuf JSON mapping rules as specified in the
+ * <a href="https://protobuf.dev/programming-guides/json/">Protobuf JSON Mapping Guide</a>.
+ * It ensures that protobuf types are correctly represented in OpenAPI documentation with
+ * appropriate schemas, examples, and constraints.
+ *
+ * <h3>Supported Well-Known Types:</h3>
+ * <ul>
+ *   <li><strong>Timestamp</strong> - RFC 3339 date-time string (e.g., "1970-01-01T00:00:00Z")</li>
+ *   <li><strong>Duration</strong> - String with "s" suffix (e.g., "1.000340012s")</li>
+ *   <li><strong>Wrapper Types</strong> - Nullable primitive types (BoolValue, Int32Value, etc.)</li>
+ *   <li><strong>Any</strong> - Object with "@type" field for type information</li>
+ *   <li><strong>Struct</strong> - Arbitrary JSON object</li>
+ *   <li><strong>ListValue</strong> - Array of arbitrary values</li>
+ *   <li><strong>Value</strong> - Any JSON value</li>
+ *   <li><strong>FieldMask</strong> - String representing field paths</li>
+ *   <li><strong>Empty</strong> - Empty object</li>
+ *   <li><strong>ByteString</strong> - Base64-encoded string</li>
+ * </ul>
+ *
+ * <h3>Usage Example:</h3>
+ * <pre>{@code
+ * // This converter is automatically registered by SpringDocBridgeProtobufAutoConfiguration
+ * // No manual configuration is required
+ *
+ * @RestController
+ * public class TimeController {
+ *
+ *     @GetMapping("/current-time")
+ *     public Timestamp getCurrentTime() {
+ *         // Will be documented as:
+ *         // {
+ *         //   "type": "string",
+ *         //   "format": "date-time",
+ *         //   "example": "1970-01-01T00:00:00Z"
+ *         // }
+ *         return Timestamps.now();
+ *     }
+ * }
+ * }</pre>
  *
  * @author Freeman
+ * @since 0.1.0
+ * @see ModelConverter
+ * @see <a href="https://protobuf.dev/programming-guides/json/">Protobuf JSON Mapping</a>
+ * @see SpringDocBridgeProtobufAutoConfiguration
  */
 public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
 

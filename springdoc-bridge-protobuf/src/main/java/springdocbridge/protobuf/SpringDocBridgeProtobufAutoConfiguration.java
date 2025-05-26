@@ -13,7 +13,33 @@ import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilde
 import org.springframework.context.annotation.Bean;
 
 /**
+ * Spring Boot auto-configuration for integrating Protocol Buffers (protobuf) support with SpringDoc OpenAPI.
+ *
+ * <p>This auto-configuration class automatically configures Jackson and SpringDoc to properly handle
+ * protobuf messages and enums when generating OpenAPI documentation. It provides seamless integration
+ * between protobuf types and OpenAPI schema generation.
+ *
+ * <h3>Usage Example:</h3>
+ * <pre>{@code
+ * // Simply add the dependency to your Spring Boot application
+ * // Auto-configuration will be triggered automatically
+ *
+ * @RestController
+ * public class UserController {
+ *
+ *     @PostMapping("/users")
+ *     public CreateUserResponse createUser(@RequestBody CreateUserRequest request) {
+ *         // Your protobuf messages will be properly documented in OpenAPI
+ *         return userService.createUser(request);
+ *     }
+ * }
+ * }</pre>
+ *
  * @author Freeman
+ * @since 1.0.0
+ * @see SpringDocConfiguration
+ * @see ProtobufWellKnownTypeModelConverter
+ * @see com.google.protobuf.util.JsonFormat
  */
 @AutoConfiguration(after = SpringDocConfiguration.class)
 @ConditionalOnClass({
@@ -31,13 +57,20 @@ public class SpringDocBridgeProtobufAutoConfiguration implements InitializingBea
     }
 
     /**
-     * Make Jackson support protobuf message for serialization and deserialization.
+     * This customizer registers the {@link ProtobufModule} with Jackson, enabling automatic
+     * serialization and deserialization of protobuf messages and enums using Google's official
+     * JSON mapping format.
      */
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer springDocBridgeProtobufJackson2ObjectMapperBuilderCustomizer() {
         return builder -> builder.modules(new ProtobufModule());
     }
 
+    /**
+     * This converter handles special protobuf types like Timestamp, Duration, Any, Struct, etc.,
+     * and converts them to appropriate OpenAPI schema representations according to the protobuf
+     * JSON mapping specification.
+     */
     @Bean
     public ProtobufWellKnownTypeModelConverter protobufWellKnownTypeModelConverter() {
         return new ProtobufWellKnownTypeModelConverter(objectMapperProvider);
