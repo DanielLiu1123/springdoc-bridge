@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package pet.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
+
+option java_multiple_files = true;
+option java_package = "pet.v1";
+
+enum PetType {
+  PET_TYPE_UNSPECIFIED = 0;
+  DOG = 1;
+  CAT = 2;
+  BIRD = 3;
+  FISH = 4;
+}
+
+enum PetStatus {
+  PET_STATUS_UNSPECIFIED = 0;
+  AVAILABLE = 1;
+  PENDING = 2;
+  SOLD = 3;
+}
+
+message Address {
+  string street = 1;
+  string city = 2;
+  string state = 3;
+  string zip_code = 4;
+  string country = 5;
+}
+
+message Owner {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+  optional string phone = 4;
+  Address address = 5;
+}
+
+message Pet {
+  string id = 1;
+  string name = 2;
+  PetType type = 3;
+  PetStatus status = 4;
+  optional Owner owner = 5;
+  repeated string tags = 6;
+  optional google.protobuf.Timestamp birth_date = 7;
+  optional google.protobuf.Duration life_expectancy = 8;
+  optional google.protobuf.DoubleValue weight = 9;
+  optional google.protobuf.BoolValue is_vaccinated = 10;
+  map<string, string> metadata = 11;
+  repeated Address previous_addresses = 12;
+}
