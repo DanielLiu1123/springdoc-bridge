@@ -17,12 +17,12 @@ import java.lang.reflect.Method;
  */
 final class ProtobufMessageDeserializer<T extends MessageOrBuilder> extends JsonDeserializer<T> {
 
-    private final Class<T> clazz;
     private final ProtobufModule.Options options;
+    private final Method newBuilderMethod;
 
     public ProtobufMessageDeserializer(Class<T> clazz, ProtobufModule.Options options) {
-        this.clazz = clazz;
         this.options = options;
+        this.newBuilderMethod = mustFindMethod(clazz, "newBuilder");
     }
 
     @Override
@@ -31,11 +31,6 @@ final class ProtobufMessageDeserializer<T extends MessageOrBuilder> extends Json
         var treeNode = p.readValueAsTree();
 
         String json = treeNode.toString();
-
-        var newBuilderMethod = findMethod(clazz, "newBuilder");
-        if (newBuilderMethod == null) {
-            throw new IllegalStateException("No newBuilder method found for class " + clazz);
-        }
 
         try {
             var builder = (Message.Builder) newBuilderMethod.invoke(null);
@@ -51,11 +46,11 @@ final class ProtobufMessageDeserializer<T extends MessageOrBuilder> extends Json
         }
     }
 
-    private static Method findMethod(Class<?> clazz, String name, Class<?>... parameterTypes) {
+    private static Method mustFindMethod(Class<?> clazz, String name, Class<?>... parameterTypes) {
         try {
             return clazz.getMethod(name, parameterTypes);
         } catch (NoSuchMethodException e) {
-            return null;
+            throw new IllegalArgumentException("No method found for " + name + " in class " + clazz, e);
         }
     }
 }
