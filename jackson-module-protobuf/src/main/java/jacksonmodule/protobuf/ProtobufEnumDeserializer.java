@@ -1,4 +1,4 @@
-package jacksondataformat.protobuf;
+package jacksonmodule.protobuf;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;

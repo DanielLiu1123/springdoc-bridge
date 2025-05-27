@@ -2,7 +2,7 @@ rootProject.name = 'springdoc-bridge'
 
 include(":examples:protobuf")
 
-include(":jackson-dataformat-protobuf")
+include(":jackson-module-protobuf")
 include(":springdoc-bridge-protobuf")
 
 java.util.Optional.of(new File("${rootDir}/.git/hooks")).filter { it.exists() && it.isDirectory() }.ifPresent {

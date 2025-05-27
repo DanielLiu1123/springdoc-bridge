@@ -2,7 +2,7 @@ dependencies {
     compileOnly("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
     compileOnly("org.springdoc:springdoc-openapi-starter-common:${springDocsVersion}")
 
-    api(project(":jackson-dataformat-protobuf"))
+    api(project(":jackson-module-protobuf"))
 
     // Test dependencies
     testImplementation("org.springframework.boot:spring-boot-starter-test:${springBootVersion}")

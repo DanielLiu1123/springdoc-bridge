@@ -1,7 +1,7 @@
 package springdocbridge.protobuf;
 
 import com.google.protobuf.util.JsonFormat;
-import jacksondataformat.protobuf.ProtobufModule;
+import jacksonmodule.protobuf.ProtobufModule;
 import org.springdoc.core.configuration.SpringDocConfiguration;
 import org.springdoc.core.providers.ObjectMapperProvider;
 import org.springframework.beans.factory.InitializingBean;

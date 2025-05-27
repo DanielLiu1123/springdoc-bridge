@@ -1,4 +1,4 @@
-package jacksondataformat.protobuf;
+package jacksonmodule.protobuf;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;

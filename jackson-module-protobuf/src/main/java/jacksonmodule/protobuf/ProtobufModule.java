@@ -1,4 +1,4 @@
-package jacksondataformat.protobuf;
+package jacksonmodule.protobuf;
 
 import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationConfig;
