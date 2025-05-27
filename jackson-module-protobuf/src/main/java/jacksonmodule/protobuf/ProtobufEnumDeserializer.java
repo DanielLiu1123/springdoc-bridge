@@ -7,15 +7,24 @@ import com.fasterxml.jackson.databind.node.NumericNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.protobuf.ProtocolMessageEnum;
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 final class ProtobufEnumDeserializer<T extends Enum<T> & ProtocolMessageEnum> extends JsonDeserializer<T> {
 
+    private static final String UNRECOGNIZED = "UNRECOGNIZED";
+
     private final Class<T> clazz;
+    private final Map<Integer, T> numberToEnum;
+    private final Map<String, T> nameToEnum;
+    private final T unrecognizedEnum;
 
     public ProtobufEnumDeserializer(Class<T> clazz) {
         this.clazz = clazz;
+        this.numberToEnum = getNumberMap(clazz);
+        this.nameToEnum = getNameMap(clazz);
+        this.unrecognizedEnum = getUnrecognizedEnum(clazz);
     }
 
     @Override
@@ -25,10 +34,10 @@ final class ProtobufEnumDeserializer<T extends Enum<T> & ProtocolMessageEnum> ex
 
         if (treeNode.isValueNode()) {
             if (treeNode instanceof NumericNode numericNode) {
-                return convertEnumFromInt(numericNode.intValue());
+                return numberToEnum.getOrDefault(numericNode.intValue(), unrecognizedEnum);
             }
             if (treeNode instanceof TextNode textNode) {
-                return convertEnumFromString(textNode.asText());
+                return nameToEnum.getOrDefault(textNode.textValue(), unrecognizedEnum);
             }
         }
 
@@ -36,43 +45,43 @@ final class ProtobufEnumDeserializer<T extends Enum<T> & ProtocolMessageEnum> ex
                 "Can't deserialize protobuf enum '" + clazz.getSimpleName() + "' from " + treeNode);
     }
 
-    private T convertEnumFromString(String text) {
-        var enums = clazz.getEnumConstants();
-        if (enums == null) {
+    private T[] getEnumConstants(Class<T> clazz) {
+        var enumConstants = clazz.getEnumConstants();
+        if (enumConstants == null) {
             throw new IllegalStateException("No enum constants found for class " + clazz);
         }
+        return enumConstants;
+    }
 
-        for (var e : enums) {
-            if (Objects.equals(e.name(), text)) {
+    private Map<Integer, T> getNumberMap(Class<T> clazz) {
+        var enumConstants = getEnumConstants(clazz);
+        Map<Integer, T> result = new HashMap<>();
+        for (var e : enumConstants) {
+            if (!Objects.equals(e.name(), UNRECOGNIZED)) { // UNRECOGNIZED getNumber() will throw exception
+                result.put(e.getNumber(), e);
+            }
+        }
+        return result;
+    }
+
+    private Map<String, T> getNameMap(Class<T> clazz) {
+        var enumConstants = getEnumConstants(clazz);
+        Map<String, T> result = new HashMap<>();
+        for (var e : enumConstants) {
+            if (!Objects.equals(e.name(), UNRECOGNIZED)) {
+                result.put(e.name(), e);
+            }
+        }
+        return result;
+    }
+
+    private T getUnrecognizedEnum(Class<T> clazz) {
+        var enumConstants = getEnumConstants(clazz);
+        for (var e : enumConstants) {
+            if (Objects.equals(e.name(), UNRECOGNIZED)) {
                 return e;
             }
         }
-
-        return getUnrecognizedEnum(enums);
-    }
-
-    private T convertEnumFromInt(int number) {
-        var enums = clazz.getEnumConstants();
-        if (enums == null) {
-            throw new IllegalStateException("No enum constants found for class " + clazz);
-        }
-
-        for (var e : enums) {
-            if (!Objects.equals(e.name(), "UNRECOGNIZED")) { // UNRECOGNIZED getNumber() will throw exception
-                if (e.getNumber() == number) {
-                    return e;
-                }
-            }
-        }
-
-        // return UNRECOGNIZED
-        return getUnrecognizedEnum(enums);
-    }
-
-    private T getUnrecognizedEnum(T[] enums) {
-        return Arrays.stream(enums)
-                .filter(e -> Objects.equals(e.name(), "UNRECOGNIZED"))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No UNRECOGNIZED enum constant found for class " + clazz));
+        throw new IllegalStateException("No UNRECOGNIZED enum constant found for class " + clazz);
     }
 }
