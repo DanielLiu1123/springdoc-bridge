@@ -1,9 +1,9 @@
-# SpringDoc Bridge
+# Springdoc Bridge
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.danielliu1123/springdoc-bridge-protobuf)](https://central.sonatype.com/artifact/io.github.danielliu1123/springdoc-bridge-protobuf)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-SpringDoc Bridge is a library that provides additional data format support for SpringDoc OpenAPI.
+Springdoc Bridge is a library that provides additional data format support for [springdoc-openapi](https://springdoc.org/).
 
 Currently, it supports following data formats:
 
