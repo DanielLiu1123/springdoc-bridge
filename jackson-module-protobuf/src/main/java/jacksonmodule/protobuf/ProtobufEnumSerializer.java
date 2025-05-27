@@ -8,8 +8,18 @@ import java.io.IOException;
 
 final class ProtobufEnumSerializer<T extends Enum<T> & ProtocolMessageEnum> extends JsonSerializer<T> {
 
+    private final ProtobufModule.Options options;
+
+    public ProtobufEnumSerializer(ProtobufModule.Options options) {
+        this.options = options;
+    }
+
     @Override
     public void serialize(T value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-        gen.writeString(value.name());
+        if (options.serializeEnumAsInt()) {
+            gen.writeNumber(value.getNumber());
+        } else {
+            gen.writeString(value.name());
+        }
     }
 }

@@ -12,6 +12,8 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.Serializers;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.ProtocolMessageEnum;
+import com.google.protobuf.util.JsonFormat;
+import lombok.Builder;
 
 /**
  * Jackson module that provides comprehensive support for Protocol Buffers (protobuf) message and enum
@@ -44,12 +46,22 @@ import com.google.protobuf.ProtocolMessageEnum;
  * }</pre>
  *
  * @author Freeman
- * @since 0.1.0
  * @see com.google.protobuf.util.JsonFormat
  * @see com.google.protobuf.Message
  * @see ProtocolMessageEnum
+ * @since 0.1.0
  */
 public final class ProtobufModule extends SimpleModule {
+
+    private final Options options;
+
+    public ProtobufModule() {
+        this(Options.DEFAULT);
+    }
+
+    public ProtobufModule(Options options) {
+        this.options = options;
+    }
 
     @Override
     public void setupModule(SetupContext context) {
@@ -58,10 +70,10 @@ public final class ProtobufModule extends SimpleModule {
             public JsonSerializer<?> findSerializer(
                     SerializationConfig config, JavaType type, BeanDescription beanDesc) {
                 if (MessageOrBuilder.class.isAssignableFrom(type.getRawClass())) {
-                    return new ProtobufMessageSerializer<>();
+                    return new ProtobufMessageSerializer<>(options);
                 }
                 if (ProtocolMessageEnum.class.isAssignableFrom(type.getRawClass()) && type.isEnumType()) {
-                    return new ProtobufEnumSerializer<>();
+                    return new ProtobufEnumSerializer<>(options);
                 }
                 return super.findSerializer(config, type, beanDesc);
             }
@@ -82,10 +94,32 @@ public final class ProtobufModule extends SimpleModule {
             public JsonDeserializer<?> findBeanDeserializer(
                     JavaType type, DeserializationConfig config, BeanDescription beanDesc) throws JsonMappingException {
                 if (MessageOrBuilder.class.isAssignableFrom(type.getRawClass())) {
-                    return new ProtobufMessageDeserializer(type.getRawClass());
+                    return new ProtobufMessageDeserializer(type.getRawClass(), options);
                 }
                 return super.findBeanDeserializer(type, config, beanDesc);
             }
         });
+    }
+
+    /**
+     * @param serializeEnumAsInt whether to serialize protobuf enums as integers (default: false)
+     * @param parser             JsonFormat.Parser instance for parsing JSON to protobuf messages
+     * @param printer            JsonFormat.Printer instance for printing protobuf messages to JSON
+     */
+    @Builder(toBuilder = true)
+    public record Options(boolean serializeEnumAsInt, JsonFormat.Parser parser, JsonFormat.Printer printer) {
+        public Options {
+            if (parser == null) {
+                parser = JsonFormat.parser().ignoringUnknownFields();
+            }
+            if (printer == null) {
+                printer = JsonFormat.printer().omittingInsignificantWhitespace().includingDefaultValueFields();
+                if (serializeEnumAsInt) {
+                    printer = printer.printingEnumsAsInts();
+                }
+            }
+        }
+
+        public static final Options DEFAULT = Options.builder().build();
     }
 }

@@ -17,12 +17,12 @@ import java.lang.reflect.Method;
  */
 final class ProtobufMessageDeserializer<T extends MessageOrBuilder> extends JsonDeserializer<T> {
 
-    private static final JsonFormat.Parser parser = JsonFormat.parser().ignoringUnknownFields();
-
     private final Class<T> clazz;
+    private final ProtobufModule.Options options;
 
-    public ProtobufMessageDeserializer(Class<T> clazz) {
+    public ProtobufMessageDeserializer(Class<T> clazz, ProtobufModule.Options options) {
         this.clazz = clazz;
+        this.options = options;
     }
 
     @Override
@@ -40,7 +40,7 @@ final class ProtobufMessageDeserializer<T extends MessageOrBuilder> extends Json
         try {
             var builder = (Message.Builder) newBuilderMethod.invoke(null);
 
-            parser.merge(json, builder);
+            options.parser().merge(json, builder);
 
             @SuppressWarnings("unchecked")
             T result = (T) builder.build();

@@ -14,11 +14,14 @@ import java.io.IOException;
  */
 final class ProtobufMessageSerializer<T extends MessageOrBuilder> extends JsonSerializer<T> {
 
-    private static final JsonFormat.Printer printer =
-            JsonFormat.printer().omittingInsignificantWhitespace().includingDefaultValueFields();
+    private final ProtobufModule.Options options;
+
+    public ProtobufMessageSerializer(ProtobufModule.Options options) {
+        this.options = options;
+    }
 
     @Override
     public void serialize(T value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-        gen.writeRawValue(printer.print(value));
+        gen.writeRawValue(options.printer().print(value));
     }
 }
