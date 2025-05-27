@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ser.Serializers;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.protobuf.util.JsonFormat;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.Builder;
 
 /**
@@ -51,6 +52,7 @@ import lombok.Builder;
  * @see ProtocolMessageEnum
  * @since 0.1.0
  */
+@SuppressFBWarnings("SE_BAD_FIELD")
 public final class ProtobufModule extends SimpleModule {
 
     private final Options options;
