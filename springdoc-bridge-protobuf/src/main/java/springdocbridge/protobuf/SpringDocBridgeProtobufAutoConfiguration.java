@@ -3,7 +3,6 @@ package springdocbridge.protobuf;
 import com.google.protobuf.util.JsonFormat;
 import jacksondataformat.protobuf.ProtobufModule;
 import org.springdoc.core.configuration.SpringDocConfiguration;
-import org.springdoc.core.properties.SpringDocConfigProperties;
 import org.springdoc.core.providers.ObjectMapperProvider;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -47,7 +46,7 @@ import org.springframework.context.annotation.Bean;
     SpringDocConfiguration.class, // springdoc-openapi-starter-common
     JsonFormat.class // protobuf-java-util
 })
-@ConditionalOnBean(SpringDocConfigProperties.class) // springdoc enabled
+@ConditionalOnBean(SpringDocConfiguration.class) // springdoc enabled
 public class SpringDocBridgeProtobufAutoConfiguration implements InitializingBean {
 
     private final ObjectMapperProvider objectMapperProvider;
