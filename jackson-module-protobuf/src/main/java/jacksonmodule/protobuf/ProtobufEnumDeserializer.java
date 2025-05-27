@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 
 final class ProtobufEnumDeserializer<T extends Enum<T> & ProtocolMessageEnum> extends JsonDeserializer<T> {
 
@@ -66,7 +67,7 @@ final class ProtobufEnumDeserializer<T extends Enum<T> & ProtocolMessageEnum> ex
 
     private Map<String, T> getNameMap(Class<T> clazz) {
         var enumConstants = getEnumConstants(clazz);
-        Map<String, T> result = new HashMap<>();
+        Map<String, T> result = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (var e : enumConstants) {
             if (!Objects.equals(e.name(), UNRECOGNIZED)) {
                 result.put(e.name(), e);
