@@ -14,6 +14,8 @@ import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.protobuf.util.JsonFormat;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import lombok.Builder;
 
 /**
@@ -60,6 +62,12 @@ public final class ProtobufModule extends SimpleModule {
      */
     private final Options options;
 
+    private final ProtobufEnumSerializer<?> enumSerializer;
+    private final ProtobufMessageSerializer<?> messageSerializer;
+    private final ConcurrentMap<Class<?>, ProtobufEnumDeserializer<?>> enumDeserializers = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Class<?>, ProtobufMessageDeserializer<?>> messageDeserializers =
+            new ConcurrentHashMap<>();
+
     /**
      * Creates a new ProtobufModule with default options.
      *
@@ -76,6 +84,8 @@ public final class ProtobufModule extends SimpleModule {
      */
     public ProtobufModule(Options options) {
         this.options = options;
+        this.enumSerializer = new ProtobufEnumSerializer<>(options);
+        this.messageSerializer = new ProtobufMessageSerializer<>(options);
     }
 
     @Override
@@ -85,10 +95,10 @@ public final class ProtobufModule extends SimpleModule {
             public JsonSerializer<?> findSerializer(
                     SerializationConfig config, JavaType type, BeanDescription beanDesc) {
                 if (MessageOrBuilder.class.isAssignableFrom(type.getRawClass())) {
-                    return new ProtobufMessageSerializer<>(options);
+                    return messageSerializer;
                 }
                 if (ProtocolMessageEnum.class.isAssignableFrom(type.getRawClass()) && type.isEnumType()) {
-                    return new ProtobufEnumSerializer<>(options);
+                    return enumSerializer;
                 }
                 return super.findSerializer(config, type, beanDesc);
             }
@@ -99,7 +109,7 @@ public final class ProtobufModule extends SimpleModule {
             public JsonDeserializer<?> findEnumDeserializer(
                     Class<?> type, DeserializationConfig config, BeanDescription beanDesc) throws JsonMappingException {
                 if (ProtocolMessageEnum.class.isAssignableFrom(type) && type.isEnum()) {
-                    return new ProtobufEnumDeserializer(type);
+                    return enumDeserializers.computeIfAbsent(type, k -> new ProtobufEnumDeserializer(k));
                 }
                 return super.findEnumDeserializer(type, config, beanDesc);
             }
@@ -108,8 +118,9 @@ public final class ProtobufModule extends SimpleModule {
             @SuppressWarnings({"rawtypes", "unchecked"})
             public JsonDeserializer<?> findBeanDeserializer(
                     JavaType type, DeserializationConfig config, BeanDescription beanDesc) throws JsonMappingException {
-                if (MessageOrBuilder.class.isAssignableFrom(type.getRawClass())) {
-                    return new ProtobufMessageDeserializer(type.getRawClass(), options);
+                Class<?> clz = type.getRawClass();
+                if (MessageOrBuilder.class.isAssignableFrom(clz)) {
+                    return messageDeserializers.computeIfAbsent(clz, k -> new ProtobufMessageDeserializer(k, options));
                 }
                 return super.findBeanDeserializer(type, config, beanDesc);
             }
