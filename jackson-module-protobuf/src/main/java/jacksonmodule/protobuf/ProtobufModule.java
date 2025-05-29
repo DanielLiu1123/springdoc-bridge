@@ -120,8 +120,7 @@ public final class ProtobufModule extends SimpleModule {
                     JavaType type, DeserializationConfig config, BeanDescription beanDesc) throws JsonMappingException {
                 Class<?> clz = type.getRawClass();
                 if (MessageOrBuilder.class.isAssignableFrom(clz)) {
-                    return messageDeserializers.computeIfAbsent(
-                            clz, k -> new ProtobufMessageDeserializer(clz, options));
+                    return messageDeserializers.computeIfAbsent(clz, k -> new ProtobufMessageDeserializer(k, options));
                 }
                 return super.findBeanDeserializer(type, config, beanDesc);
             }
