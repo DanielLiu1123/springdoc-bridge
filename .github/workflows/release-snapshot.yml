@@ -28,6 +28,4 @@ jobs:
 
       - name: Release Snapshot
         run: |
-          MAVENCENTRAL_USERNAME=${{ secrets.MAVENCENTRAL_USERNAME }}
-          MAVENCENTRAL_PASSWORD=${{ secrets.MAVENCENTRAL_PASSWORD }}
-          ./gradlew publish jreleaserDeploy
+          MAVENCENTRAL_USERNAME=${{ secrets.MAVENCENTRAL_USERNAME }} MAVENCENTRAL_PASSWORD=${{ secrets.MAVENCENTRAL_PASSWORD }} ./gradlew publish jreleaserDeploy
