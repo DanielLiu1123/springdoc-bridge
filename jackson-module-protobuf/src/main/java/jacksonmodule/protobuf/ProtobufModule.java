@@ -29,7 +29,7 @@ import lombok.Builder;
  * <p>The module uses Google's {@link com.google.protobuf.util.JsonFormat} internally to ensure
  * compatibility with the official protobuf JSON mapping specification.
  *
- * <h3>Usage Example:</h3>
+ * <p> Usage Example:
  * <pre>{@code
  * // Register the module with ObjectMapper
  * ObjectMapper mapper = new ObjectMapper();
@@ -55,12 +55,25 @@ import lombok.Builder;
 @SuppressFBWarnings("SE_BAD_FIELD")
 public final class ProtobufModule extends SimpleModule {
 
+    /**
+     * The configuration options for this module.
+     */
     private final Options options;
 
+    /**
+     * Creates a new ProtobufModule with default options.
+     *
+     * @see Options#DEFAULT
+     */
     public ProtobufModule() {
         this(Options.DEFAULT);
     }
 
+    /**
+     * Creates a new ProtobufModule with the specified options.
+     *
+     * @param options the configuration options for JSON serialization and deserialization
+     */
     public ProtobufModule(Options options) {
         this.options = options;
     }
@@ -110,6 +123,16 @@ public final class ProtobufModule extends SimpleModule {
      */
     @Builder(toBuilder = true)
     public record Options(boolean serializeEnumAsInt, JsonFormat.Parser parser, JsonFormat.Printer printer) {
+        /**
+         * Compact constructor for Options record that initializes default values for null parameters.
+         * If parser is null, creates a default parser that ignores unknown fields.
+         * If printer is null, creates a default printer that omits whitespace and includes default value fields.
+         * When serializeEnumAsInt is true and printer is null, configures the default printer to print enums as integers.
+         *
+         * @param serializeEnumAsInt whether to serialize protobuf enums as integers
+         * @param parser the JSON parser for converting JSON to protobuf messages
+         * @param printer the JSON printer for converting protobuf messages to JSON
+         */
         public Options {
             if (parser == null) {
                 parser = JsonFormat.parser().ignoringUnknownFields();
@@ -122,6 +145,9 @@ public final class ProtobufModule extends SimpleModule {
             }
         }
 
+        /**
+         * Default options instance with serializeEnumAsInt set to false and default parser/printer.
+         */
         public static final Options DEFAULT = Options.builder().build();
     }
 }

@@ -1,3 +1,5 @@
+description = "SpringDoc Bridge for Protocol Buffers"
+
 dependencies {
     compileOnly("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
     compileOnly("org.springdoc:springdoc-openapi-starter-common:${springDocsVersion}")
@@ -9,5 +11,6 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
     testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${springDocsVersion}")
 }
+
 
 apply from: "${rootDir}/gradle/deploy.gradle"

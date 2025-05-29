@@ -51,7 +51,7 @@ import org.springframework.util.StringUtils;
  * It ensures that protobuf types are correctly represented in OpenAPI documentation with
  * appropriate schemas, examples, and constraints.
  *
- * <h3>Supported Well-Known Types:</h3>
+ * <p> Supported Well-Known Types:
  * <ul>
  *   <li><strong>Timestamp</strong> - RFC 3339 date-time string (e.g., "1970-01-01T00:00:00Z")</li>
  *   <li><strong>Duration</strong> - String with "s" suffix (e.g., "1.000340012s")</li>
@@ -65,7 +65,7 @@ import org.springframework.util.StringUtils;
  *   <li><strong>ByteString</strong> - Base64-encoded string</li>
  * </ul>
  *
- * <h3>Usage Example:</h3>
+ * <p> Usage Example:
  * <pre>{@code
  * // This converter is automatically registered by SpringDocBridgeProtobufAutoConfiguration
  * // No manual configuration is required

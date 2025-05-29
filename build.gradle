@@ -16,6 +16,11 @@ allprojects {
         }
     }
 
+    javadoc {
+        // Suppress warnings about missing Javadoc comments
+        options.addStringOption('Xdoclint:none', '-quiet')
+    }
+
     repositories {
         mavenCentral()
         maven { url = "https://repo.spring.io/snapshot" }

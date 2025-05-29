@@ -5,10 +5,9 @@ apply plugin: 'org.jreleaser'
 version = version as String
 version = System.getenv('RELEASE') ? version.substring(0, version.lastIndexOf('-SNAPSHOT')) : version
 
-def isRelease = !version.endsWith('-SNAPSHOT')
-
 java {
     withSourcesJar()
+    withJavadocJar()
 }
 
 def githubUrl = 'https://github.com/DanielLiu1123/springdoc-bridge'
@@ -18,21 +17,15 @@ publishing {
         maven(MavenPublication) {
             from components.java
 
-            // see  https://docs.gradle.org/current/userguide/publishing_maven.html
-//            versionMapping {
-//                usage('java-api') {
-//                    fromResolutionOf('runtimeClasspath')
-//                }
-//                usage('java-runtime') {
-//                    fromResolutionResult()
-//                }
-//            }
+            // see https://docs.gradle.org/current/userguide/publishing_maven.html
             pom {
                 url = "${githubUrl}"
+                name = project.name
+                description = project.description ?: ""
                 licenses {
                     license {
                         name = 'MIT License'
-                        url = 'https://www.opensource.org/licenses/mit-license.php'
+                        url = 'https://opensource.org/license/mit'
                         distribution = 'repo'
                     }
                 }
@@ -62,27 +55,38 @@ publishing {
 // see https://jreleaser.org/guide/latest/reference/deploy/maven/maven-central.html
 jreleaser {
     signing {
-        active = 'ALWAYS'
+        active = 'RELEASE'
         armored = true
+        passphrase = System.getenv('GPG_PASSPHRASE')
+        publicKey  = System.getenv('GPG_PUBLIC_KEY')
+        secretKey  = System.getenv('GPG_SECRET_KEY')
     }
     deploy {
         maven {
             mavenCentral {
-                'release' {
+                'release-deploy' {
                     active = 'RELEASE'
                     url = 'https://central.sonatype.com/api/v1/publisher'
+                    javadocJar = false
                     stagingRepository('build/staging-deploy')
+                    username = System.getenv('MAVENCENTRAL_USERNAME')
+                    password = System.getenv('MAVENCENTRAL_PASSWORD')
                 }
             }
             nexus2 {
-                'snapshot' {
+                'snapshot-deploy' {
                     active = 'SNAPSHOT'
+                    url = 'https://s01.oss.sonatype.org/service/local'
                     snapshotUrl = 'https://central.sonatype.com/repository/maven-snapshots'
+                    javadocJar = false
                     applyMavenCentralRules = true
                     snapshotSupported = true
                     closeRepository = true
                     releaseRepository = true
                     stagingRepository('build/staging-deploy')
+                    username = System.getenv('MAVENCENTRAL_USERNAME')
+                    password = System.getenv('MAVENCENTRAL_PASSWORD')
+                    sign = false
                 }
             }
         }

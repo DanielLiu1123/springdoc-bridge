@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Bean;
  * protobuf messages and enums when generating OpenAPI documentation. It provides seamless integration
  * between protobuf types and OpenAPI schema generation.
  *
- * <h3>Usage Example:</h3>
+ * <p> Usage Example:
  * <pre>{@code
  * // Simply add the dependency to your Spring Boot application
  * // Auto-configuration will be triggered automatically
