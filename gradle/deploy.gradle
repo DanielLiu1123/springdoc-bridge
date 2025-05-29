@@ -1,33 +1,32 @@
 apply plugin: 'maven-publish'
 apply plugin: 'signing'
+apply plugin: 'org.jreleaser'
 
 version = version as String
 version = System.getenv('RELEASE') ? version.substring(0, version.lastIndexOf('-SNAPSHOT')) : version
 
 def isRelease = !version.endsWith('-SNAPSHOT')
 
-tasks.register('sourcesJar', Jar) {
-    from sourceSets.main.allJava
-    archiveClassifier.set('sources')
+java {
+    withSourcesJar()
 }
 
 def githubUrl = 'https://github.com/DanielLiu1123/springdoc-bridge'
 
 publishing {
     publications {
-        mavenJava(MavenPublication) {
-            artifact sourcesJar
+        maven(MavenPublication) {
             from components.java
 
             // see  https://docs.gradle.org/current/userguide/publishing_maven.html
-            versionMapping {
-                usage('java-api') {
-                    fromResolutionOf('runtimeClasspath')
-                }
-                usage('java-runtime') {
-                    fromResolutionResult()
-                }
-            }
+//            versionMapping {
+//                usage('java-api') {
+//                    fromResolutionOf('runtimeClasspath')
+//                }
+//                usage('java-runtime') {
+//                    fromResolutionResult()
+//                }
+//            }
             pom {
                 url = "${githubUrl}"
                 licenses {
@@ -52,25 +51,40 @@ publishing {
             }
         }
     }
+
     repositories {
         maven {
-            credentials {
-                username = System.getenv('OSSRH_USER')
-                password = System.getenv('OSSRH_PASSWORD')
-            }
-            if (isRelease) {
-                url = 'https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/'
-            } else {
-                url = 'https://central.sonatype.com/repository/maven-snapshots/'
-            }
+            url = layout.buildDirectory.dir('staging-deploy')
         }
     }
+}
 
-    tasks.withType(Sign).configureEach {
-        onlyIf { isRelease }
-    }
-
+// see https://jreleaser.org/guide/latest/reference/deploy/maven/maven-central.html
+jreleaser {
     signing {
-        sign publishing.publications.mavenJava
+        active = 'ALWAYS'
+        armored = true
+    }
+    deploy {
+        maven {
+            mavenCentral {
+                'release' {
+                    active = 'RELEASE'
+                    url = 'https://central.sonatype.com/api/v1/publisher'
+                    stagingRepository('build/staging-deploy')
+                }
+            }
+            nexus2 {
+                'snapshot' {
+                    active = 'SNAPSHOT'
+                    snapshotUrl = 'https://central.sonatype.com/repository/maven-snapshots'
+                    applyMavenCentralRules = true
+                    snapshotSupported = true
+                    closeRepository = true
+                    releaseRepository = true
+                    stagingRepository('build/staging-deploy')
+                }
+            }
+        }
     }
 }
