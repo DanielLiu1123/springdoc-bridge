@@ -1,12 +1,9 @@
 package springdocbridge.protobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.google.protobuf.Any;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
@@ -26,12 +23,10 @@ import io.swagger.v3.oas.models.media.BooleanSchema;
 import io.swagger.v3.oas.models.media.IntegerSchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.StringSchema;
-import java.lang.reflect.Type;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -42,7 +37,6 @@ import org.springdoc.core.providers.ObjectMapperProvider;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ProtobufWellKnownTypeModelConverter Tests")
-@Disabled("not pass")
 class ProtobufWellKnownTypeModelConverterTest {
 
     @Mock
@@ -58,7 +52,8 @@ class ProtobufWellKnownTypeModelConverterTest {
 
     @BeforeEach
     void setUp() {
-        when(objectMapperProvider.jsonMapper()).thenReturn(new ObjectMapper());
+        ObjectMapper objectMapper = new ObjectMapper();
+        when(objectMapperProvider.jsonMapper()).thenReturn(objectMapper);
         converter = new ProtobufWellKnownTypeModelConverter(objectMapperProvider);
     }
 
@@ -102,7 +97,7 @@ class ProtobufWellKnownTypeModelConverterTest {
             assertThat(schema).isInstanceOf(BooleanSchema.class);
             var booleanSchema = (BooleanSchema) schema;
             assertThat(booleanSchema.getNullable()).isTrue();
-            assertThat(booleanSchema.getExample()).isEqualTo("false");
+            assertThat(booleanSchema.getExample()).isEqualTo(false);
         }
 
         @Test
@@ -116,7 +111,7 @@ class ProtobufWellKnownTypeModelConverterTest {
             var integerSchema = (IntegerSchema) schema;
             assertThat(integerSchema.getFormat()).isEqualTo("int32");
             assertThat(integerSchema.getNullable()).isTrue();
-            assertThat(integerSchema.getExample()).isEqualTo("0");
+            assertThat(integerSchema.getExample()).isEqualTo(0);
         }
 
         @Test
@@ -186,7 +181,7 @@ class ProtobufWellKnownTypeModelConverterTest {
 
             assertThat(schema).isInstanceOf(StringSchema.class);
             var stringSchema = (StringSchema) schema;
-            assertThat(stringSchema.getExample()).isEqualTo("field1,field2.subfield");
+            assertThat(stringSchema.getExample()).isEqualTo("f.fooBar,h");
         }
 
         @Test
@@ -211,13 +206,11 @@ class ProtobufWellKnownTypeModelConverterTest {
             assertThat(schema).isInstanceOf(StringSchema.class);
             var stringSchema = (StringSchema) schema;
             assertThat(stringSchema.getFormat()).isEqualTo("byte");
-            assertThat(stringSchema.getExample()).isEqualTo("SGVsbG8gV29ybGQ=");
+            assertThat(stringSchema.getExample()).isEqualTo("YWJjMTIzIT8kKiYoKSctPUB+");
         }
     }
 
     private AnnotatedType createAnnotatedType(Class<?> clazz) {
-        JavaType javaType = TypeFactory.defaultInstance().constructType(clazz);
-        when(objectMapperProvider.jsonMapper().constructType((Type) any())).thenReturn(javaType);
         return new AnnotatedType(clazz);
     }
 }

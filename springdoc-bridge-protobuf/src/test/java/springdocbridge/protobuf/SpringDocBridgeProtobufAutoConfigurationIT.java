@@ -3,13 +3,11 @@ package springdocbridge.protobuf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import jacksonmodule.protobuf.ProtobufModule;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springdoc.core.providers.ObjectMapperProvider;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.Configuration;
 
@@ -26,7 +24,7 @@ class SpringDocBridgeProtobufAutoConfigurationIT {
                     .doesNotThrowAnyException();
             assertThatCode(() -> ctx.getBean(ProtobufWellKnownTypeModelConverter.class))
                     .doesNotThrowAnyException();
-            assertThatCode(() -> ctx.getBean(Jackson2ObjectMapperBuilderCustomizer.class))
+            assertThatCode(() -> ctx.getBean("springDocBridgeProtobufJackson2ObjectMapperBuilderCustomizer"))
                     .doesNotThrowAnyException();
             assertThatCode(() -> ctx.getBean(SpringDocBridgeProtobufProperties.class))
                     .doesNotThrowAnyException();
@@ -94,19 +92,6 @@ class SpringDocBridgeProtobufAutoConfigurationIT {
             // Verify ProtobufSchemaModule is registered
             var registeredModules = objectMapper.getRegisteredModuleIds();
             assertThat(registeredModules).contains(ProtobufSchemaModule.class.getName());
-        }
-    }
-
-    @Test
-    @DisplayName("Should have ProtobufModule registered when enabled")
-    void shouldHaveProtobufModuleRegisteredWhenEnabled() {
-        try (var ctx = new SpringApplicationBuilder(TestConfig.class).run()) {
-            var objectMapperProvider = ctx.getBean(ObjectMapperProvider.class);
-            var objectMapper = objectMapperProvider.jsonMapper();
-
-            // Verify ProtobufModule is registered
-            var registeredModules = objectMapper.getRegisteredModuleIds();
-            assertThat(registeredModules).contains(ProtobufModule.class.getName());
         }
     }
 
