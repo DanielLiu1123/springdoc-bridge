@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package schema_naming.v1;
+
+option java_multiple_files = true;
+option java_package = "com.example.schema.naming.v1";
+
+message SchemaNamingTestMessage {}

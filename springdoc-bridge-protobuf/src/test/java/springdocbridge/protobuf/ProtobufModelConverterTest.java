@@ -31,11 +31,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springdoc.core.providers.ObjectMapperProvider;
+import springdocbridge.protobuf.SpringDocBridgeProtobufProperties.SchemaNamingStrategy;
 import user.v1.MapTestMessage;
 import user.v1.User;
 
 @DisplayName("ProtobufWellKnownTypeModelConverter Tests")
-class ProtobufWellKnownTypeModelConverterTest {
+class ProtobufModelConverterTest {
 
     @Nested
     @DisplayName("Well-Known Types Schema Tests")
@@ -294,7 +295,8 @@ class ProtobufWellKnownTypeModelConverterTest {
 
         var modelConverters = ModelConverters.getInstance(true);
         modelConverters.addConverter(new ModelResolver(objectMapperProvider.jsonMapper()));
-        modelConverters.addConverter(new ProtobufWellKnownTypeModelConverter(objectMapperProvider));
+        modelConverters.addConverter(new ProtobufModelConverter(
+                objectMapperProvider, new ProtobufNameResolver(SchemaNamingStrategy.PROTOBUF)));
 
         return new ModelConverterContextImpl(modelConverters.getConverters());
     }

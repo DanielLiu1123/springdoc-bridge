@@ -56,20 +56,6 @@ import org.springframework.util.StringUtils;
  * It ensures that protobuf types are correctly represented in OpenAPI documentation with
  * appropriate schemas, examples, and constraints.
  *
- * <p> Supported Well-Known Types:
- * <ul>
- *   <li><strong>Timestamp</strong> - RFC 3339 date-time string (e.g., "1970-01-01T00:00:00Z")</li>
- *   <li><strong>Duration</strong> - String with "s" suffix (e.g., "1.000340012s")</li>
- *   <li><strong>Wrapper Types</strong> - Nullable primitive types (BoolValue, Int32Value, etc.)</li>
- *   <li><strong>Any</strong> - Object with "@type" field for type information</li>
- *   <li><strong>Struct</strong> - Arbitrary JSON object</li>
- *   <li><strong>ListValue</strong> - Array of arbitrary values</li>
- *   <li><strong>Value</strong> - Any JSON value</li>
- *   <li><strong>FieldMask</strong> - String representing field paths</li>
- *   <li><strong>Empty</strong> - Empty object</li>
- *   <li><strong>ByteString</strong> - Base64-encoded string</li>
- * </ul>
- *
  * <p> Usage Example:
  * <pre>{@code
  * // This converter is automatically registered by SpringDocBridgeProtobufAutoConfiguration
@@ -97,15 +83,18 @@ import org.springframework.util.StringUtils;
  * @see SpringDocBridgeProtobufAutoConfiguration
  * @since 0.1.0
  */
-public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
+public class ProtobufModelConverter implements ModelConverter {
 
     private static final Map<Class<?>, Schema<?>> WELL_KNOWN_TYPE_SCHEMAS = createWellKnownTypeSchemas();
     private static final Map<Class<?>, Schema<?>> SPECIAL_TYPE_SCHEMAS = createSpecialTypeSchemas();
 
     private final ObjectMapperProvider springDocObjectMapper;
+    private final ProtobufNameResolver protobufNameResolver;
 
-    public ProtobufWellKnownTypeModelConverter(ObjectMapperProvider springDocObjectMapper) {
+    public ProtobufModelConverter(
+            ObjectMapperProvider springDocObjectMapper, ProtobufNameResolver protobufNameResolver) {
         this.springDocObjectMapper = springDocObjectMapper;
+        this.protobufNameResolver = protobufNameResolver;
     }
 
     @Override
@@ -127,13 +116,13 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
         }
 
         // Handle protobuf enums
-        if (ProtocolMessageEnum.class.isAssignableFrom(cls) && cls.isEnum()) {
-            return createProtobufEnumSchemaWithRef(cls, context);
+        if (ProtobufNameResolver.isProtobufEnum(cls)) {
+            return createEnumSchema(cls, context, protobufNameResolver);
         }
 
         // Handle protobuf MapField - convert to simple object with additionalProperties
         if (MapField.class.isAssignableFrom(cls)) {
-            return createMapFieldSchema(javaType, context);
+            return createMapSchema(javaType, context, protobufNameResolver);
         }
 
         // Parse protobuf message
@@ -146,7 +135,7 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
         if (Message.class.isAssignableFrom(cls)) {
             var descriptor = ProtobufNameResolver.getDescriptor(cls);
             if (descriptor != null) {
-                processFields(schema, descriptor, context);
+                processFields(cls, schema, descriptor, context);
             }
         }
 
@@ -161,7 +150,10 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
     }
 
     private static void processFields(
-            Schema<?> schema, com.google.protobuf.Descriptors.Descriptor descriptor, ModelConverterContext context) {
+            Class<?> containerClass,
+            Schema<?> schema,
+            com.google.protobuf.Descriptors.Descriptor descriptor,
+            ModelConverterContext context) {
         if (StringUtils.hasText(schema.get$ref())) {
             String ref = schema.get$ref();
             // Extract schema name from $ref (e.g., "#/components/schemas/user.v1.PatchUserRequest")
@@ -169,16 +161,19 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
 
             var resolvedSchema = context.getDefinedModels().get(schemaName);
             if (resolvedSchema != null) {
-                handleField(descriptor, resolvedSchema, context);
+                handleField(containerClass, descriptor, resolvedSchema, context);
             }
         } else if (schema.getProperties() != null) {
-            handleField(descriptor, schema, context);
+            handleField(containerClass, descriptor, schema, context);
         }
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static void handleField(
-            Descriptors.Descriptor descriptor, Schema resolvedSchema, ModelConverterContext context) {
+            Class<?> containerClass,
+            Descriptors.Descriptor descriptor,
+            Schema resolvedSchema,
+            ModelConverterContext context) {
         Map<String, Schema> properties = resolvedSchema.getProperties();
         if (properties == null || properties.isEmpty()) {
             return;
@@ -351,10 +346,10 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
      *
      * @see <a href="https://github.com/DanielLiu1123/springdoc-bridge/issues/5">Reuse enum</a>
      */
-    private static Schema<?> createProtobufEnumSchemaWithRef(
-            Class<?> protobufEnumClass, ModelConverterContext context) {
-        // Generate a unique schema name for the enum
-        String enumSchemaName = protobufEnumClass.getCanonicalName();
+    private static Schema<?> createEnumSchema(
+            Class<?> protobufEnumClass, ModelConverterContext context, ProtobufNameResolver protobufNameResolver) {
+        // Generate a unique schema name for the enum based on naming strategy
+        String enumSchemaName = protobufNameResolver.getNameOfClass(protobufEnumClass);
 
         // Check if the enum schema is already defined
         if (context.getDefinedModels().containsKey(enumSchemaName)) {
@@ -389,7 +384,8 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
      * Instead of exposing the internal MapField structure, this generates
      * a clean object schema with additionalProperties.
      */
-    private static Schema<?> createMapFieldSchema(JavaType javaType, ModelConverterContext context) {
+    private static Schema<?> createMapSchema(
+            JavaType javaType, ModelConverterContext context, ProtobufNameResolver protobufNameResolver) {
         ObjectSchema schema = new ObjectSchema();
         schema.setAdditionalProperties(true);
 
@@ -414,12 +410,11 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
                     schema.setAdditionalProperties(new NumberSchema().format("float"));
                 } else if (ProtocolMessageEnum.class.isAssignableFrom(valueClass) && valueClass.isEnum()) {
                     // Handle protobuf enum values - create $ref to enum schema
-                    Schema<?> enumSchema = createProtobufEnumSchemaWithRef(valueClass, context);
+                    Schema<?> enumSchema = createEnumSchema(valueClass, context, protobufNameResolver);
                     schema.setAdditionalProperties(enumSchema);
                 } else if (Message.class.isAssignableFrom(valueClass)) {
                     // Handle protobuf message values - create $ref to message schema
-                    ProtobufNameResolver nameResolver = new ProtobufNameResolver();
-                    String messageSchemaName = nameResolver.getNameOfClass(valueClass);
+                    String messageSchemaName = protobufNameResolver.getNameOfClass(valueClass);
                     Schema<?> messageRefSchema = new Schema<>().$ref("#/components/schemas/" + messageSchemaName);
                     schema.setAdditionalProperties(messageRefSchema);
                 } else {

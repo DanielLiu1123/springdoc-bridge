@@ -39,7 +39,7 @@ import org.springframework.context.annotation.Bean;
  * @author Freeman
  * @since 0.1.0
  * @see SpringDocConfiguration
- * @see ProtobufWellKnownTypeModelConverter
+ * @see ProtobufModelConverter
  * @see com.google.protobuf.util.JsonFormat
  */
 @AutoConfiguration(after = SpringDocConfiguration.class)
@@ -54,9 +54,13 @@ import org.springframework.context.annotation.Bean;
 public class SpringDocBridgeProtobufAutoConfiguration implements InitializingBean {
 
     private final ObjectMapperProvider objectMapperProvider;
+    private final SpringDocBridgeProtobufProperties springDocBridgeProtobufProperties;
 
-    public SpringDocBridgeProtobufAutoConfiguration(ObjectMapperProvider objectMapperProvider) {
+    public SpringDocBridgeProtobufAutoConfiguration(
+            ObjectMapperProvider objectMapperProvider,
+            SpringDocBridgeProtobufProperties springDocBridgeProtobufProperties) {
         this.objectMapperProvider = objectMapperProvider;
+        this.springDocBridgeProtobufProperties = springDocBridgeProtobufProperties;
     }
 
     /**
@@ -79,8 +83,10 @@ public class SpringDocBridgeProtobufAutoConfiguration implements InitializingBea
      * JSON mapping specification.
      */
     @Bean
-    public ProtobufWellKnownTypeModelConverter protobufWellKnownTypeModelConverter() {
-        return new ProtobufWellKnownTypeModelConverter(objectMapperProvider);
+    public ProtobufModelConverter springdocBridgeProtobufModelConverter() {
+        return new ProtobufModelConverter(
+                objectMapperProvider,
+                new ProtobufNameResolver(springDocBridgeProtobufProperties.getSchemaNamingStrategy()));
     }
 
     @Override

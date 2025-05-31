@@ -22,8 +22,7 @@ class SpringDocBridgeProtobufAutoConfigurationIT {
 
             assertThatCode(() -> ctx.getBean(SpringDocBridgeProtobufAutoConfiguration.class))
                     .doesNotThrowAnyException();
-            assertThatCode(() -> ctx.getBean(ProtobufWellKnownTypeModelConverter.class))
-                    .doesNotThrowAnyException();
+            assertThatCode(() -> ctx.getBean(ProtobufModelConverter.class)).doesNotThrowAnyException();
             assertThatCode(() -> ctx.getBean("springDocBridgeProtobufJackson2ObjectMapperBuilderCustomizer"))
                     .doesNotThrowAnyException();
             assertThatCode(() -> ctx.getBean(SpringDocBridgeProtobufProperties.class))
@@ -73,11 +72,10 @@ class SpringDocBridgeProtobufAutoConfigurationIT {
     }
 
     @Test
-    @DisplayName("Should register ProtobufWellKnownTypeModelConverter")
-    void shouldRegisterProtobufWellKnownTypeModelConverter() {
+    @DisplayName("Should register ProtobufModelConverter")
+    void shouldRegisterSpringdocBridgeProtobufModelConverter() {
         try (var ctx = newAppBuilder().run()) {
-            assertThatCode(() -> ctx.getBean(ProtobufWellKnownTypeModelConverter.class))
-                    .doesNotThrowAnyException();
+            assertThatCode(() -> ctx.getBean(ProtobufModelConverter.class)).doesNotThrowAnyException();
         }
     }
 
