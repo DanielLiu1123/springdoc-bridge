@@ -8,7 +8,9 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
 /**
@@ -35,7 +37,7 @@ import org.springframework.context.annotation.Bean;
  * }</pre>
  *
  * @author Freeman
- * @since 1.0.0
+ * @since 0.1.0
  * @see SpringDocConfiguration
  * @see ProtobufWellKnownTypeModelConverter
  * @see com.google.protobuf.util.JsonFormat
@@ -47,6 +49,8 @@ import org.springframework.context.annotation.Bean;
     JsonFormat.class // protobuf-java-util
 })
 @ConditionalOnBean(SpringDocConfiguration.class) // springdoc enabled
+@ConditionalOnProperty(prefix = SpringDocBridgeProtobufProperties.PREFIX, name = "enabled", matchIfMissing = true)
+@EnableConfigurationProperties(SpringDocBridgeProtobufProperties.class)
 public class SpringDocBridgeProtobufAutoConfiguration implements InitializingBean {
 
     private final ObjectMapperProvider objectMapperProvider;
@@ -61,6 +65,10 @@ public class SpringDocBridgeProtobufAutoConfiguration implements InitializingBea
      * JSON mapping format.
      */
     @Bean
+    @ConditionalOnProperty(
+            prefix = SpringDocBridgeProtobufProperties.PREFIX,
+            name = "register-protobuf-module",
+            matchIfMissing = true)
     public Jackson2ObjectMapperBuilderCustomizer springDocBridgeProtobufJackson2ObjectMapperBuilderCustomizer() {
         return builder -> builder.modules(new ProtobufModule());
     }

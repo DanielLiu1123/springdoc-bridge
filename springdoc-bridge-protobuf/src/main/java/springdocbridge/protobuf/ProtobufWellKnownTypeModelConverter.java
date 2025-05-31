@@ -253,7 +253,7 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
     private static Schema<?> createNullableBooleanSchema() {
         BooleanSchema schema = new BooleanSchema();
         schema.setNullable(true);
-        schema.setExample("false");
+        schema.setExample(false);
         return schema;
     }
 
@@ -261,7 +261,7 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
         IntegerSchema schema = new IntegerSchema();
         schema.setFormat("int32");
         schema.setNullable(true);
-        schema.setExample("0");
+        schema.setExample(0);
         return schema;
     }
 
@@ -277,7 +277,7 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
         schema.setFormat("int32");
         schema.setMinimum(java.math.BigDecimal.ZERO);
         schema.setNullable(true);
-        schema.setExample("0");
+        schema.setExample(0);
         return schema;
     }
 
@@ -292,7 +292,7 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
         NumberSchema schema = new NumberSchema();
         schema.setFormat("float");
         schema.setNullable(true);
-        schema.setExample("0.0");
+        schema.setExample(0.0);
         return schema;
     }
 
@@ -300,7 +300,7 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
         NumberSchema schema = new NumberSchema();
         schema.setFormat("double");
         schema.setNullable(true);
-        schema.setExample("0.0");
+        schema.setExample(0.0);
         return schema;
     }
 
