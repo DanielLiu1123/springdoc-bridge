@@ -13,6 +13,7 @@ import com.google.protobuf.FieldMask;
 import com.google.protobuf.FloatValue;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.Int64Value;
+import com.google.protobuf.Internal;
 import com.google.protobuf.ListValue;
 import com.google.protobuf.MapField;
 import com.google.protobuf.Message;
@@ -143,6 +144,13 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
             if (descriptor != null) {
                 processFields(schema, descriptor, context);
             }
+        }
+
+        // Handle protobuf List type
+        if (Internal.ProtobufList.class.isAssignableFrom(cls)) {
+            // There some additional properties added by springdoc, we need to remove them
+            // see AbstractProtobufList
+            schema.properties(null);
         }
 
         return schema;
@@ -376,6 +384,12 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
         StringSchema schema = new StringSchema();
         schema.setFormat("byte");
         schema.setExample("YWJjMTIzIT8kKiYoKSctPUB+");
+        return schema;
+    }
+
+    private static Schema<?> createStringArraySchema() {
+        ArraySchema schema = new ArraySchema();
+        schema.setItems(new StringSchema());
         return schema;
     }
 

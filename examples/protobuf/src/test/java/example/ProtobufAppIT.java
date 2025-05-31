@@ -174,6 +174,40 @@ class ProtobufAppIT {
             assertThat(addressTypeSchema.get("type").asText()).isEqualTo("string");
             assertThat(addressTypeSchema.has("enum")).isTrue();
         }
+
+        @Test
+        @DisplayName("Array fields should not have properties")
+        void arrayFieldsShouldNotHaveProperties() throws IOException {
+            // Given
+            JsonNode apiDocs = getApiDocs();
+            JsonNode userSchema = apiDocs.get("components").get("schemas").get("user.v1.User");
+
+            // Then
+            assertThat(userSchema).isNotNull();
+            JsonNode properties = userSchema.get("properties");
+            assertThat(properties).isNotNull();
+
+            // Verify tags field (repeated string) is a proper array without properties
+            JsonNode tagsField = properties.get("tags");
+            assertThat(tagsField).isNotNull();
+            assertThat(tagsField.get("type").asText()).isEqualTo("array");
+            assertThat(tagsField.get("items").get("type").asText()).isEqualTo("string");
+            assertThat(tagsField.has("properties")).isFalse(); // This should not exist for arrays
+
+            // Verify addresses field (repeated message) is a proper array without properties
+            JsonNode addressesField = properties.get("addresses");
+            assertThat(addressesField).isNotNull();
+            assertThat(addressesField.get("type").asText()).isEqualTo("array");
+            assertThat(addressesField.get("items").has("$ref")).isTrue();
+            assertThat(addressesField.has("properties")).isFalse(); // This should not exist for arrays
+
+            // Verify phoneNumbers field (repeated message) is a proper array without properties
+            JsonNode phoneNumbersField = properties.get("phoneNumbers");
+            assertThat(phoneNumbersField).isNotNull();
+            assertThat(phoneNumbersField.get("type").asText()).isEqualTo("array");
+            assertThat(phoneNumbersField.get("items").has("$ref")).isTrue();
+            assertThat(phoneNumbersField.has("properties")).isFalse(); // This should not exist for arrays
+        }
     }
 
     @Nested
