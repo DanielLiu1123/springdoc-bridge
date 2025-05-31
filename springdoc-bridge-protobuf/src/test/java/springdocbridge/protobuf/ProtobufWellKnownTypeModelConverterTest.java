@@ -32,12 +32,9 @@ import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springdoc.core.providers.ObjectMapperProvider;
 import user.v1.User;
 
-@ExtendWith(MockitoExtension.class)
 @DisplayName("ProtobufWellKnownTypeModelConverter Tests")
 class ProtobufWellKnownTypeModelConverterTest {
 
@@ -224,7 +221,7 @@ class ProtobufWellKnownTypeModelConverterTest {
             var statusHistorySchema = schema.getProperties().get("statusHistory");
             assertThat(statusHistorySchema).isInstanceOf(ArraySchema.class);
             var arraySchema = (ArraySchema) statusHistorySchema;
-            assertThat(arraySchema.getItems()).isInstanceOf(StringSchema.class);
+            assertThat(arraySchema.getItems().get$ref()).isEqualTo("#/components/schemas/user.v1.User.Status");
             assertThat(arraySchema.getProperties()).isNull();
         }
 

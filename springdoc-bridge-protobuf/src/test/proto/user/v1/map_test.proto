@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package user.v1;
+
+option java_multiple_files = true;
+option java_package = "user.v1";
+
+// Test message for map field handling
+message MapTestMessage {
+  string id = 1;
+  string name = 2;
+  
+  // Map with string values (basic type)
+  map<string, string> metadata = 3;
+  
+  // Map with enum values
+  map<string, Status> status_map = 4;
+  
+  // Map with message values
+  map<string, Address> address_map = 5;
+  
+  // Map with integer values
+  map<string, int32> score_map = 6;
+  
+  // Map with boolean values
+  map<string, bool> feature_flags = 7;
+  
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    ACTIVE = 1;
+    INACTIVE = 2;
+    PENDING = 3;
+  }
+  
+  message Address {
+    string street = 1;
+    string city = 2;
+    string country = 3;
+  }
+}
