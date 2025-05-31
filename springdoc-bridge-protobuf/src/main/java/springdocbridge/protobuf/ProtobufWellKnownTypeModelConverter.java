@@ -37,6 +37,7 @@ import io.swagger.v3.oas.models.media.NumberSchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -292,21 +293,21 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
         Map<Class<?>, Schema<?>> map = new HashMap<>();
 
         // Timestamp: RFC 3339 string
-        map.put(Timestamp.class, createTimestampSchema());
+        map.put(Timestamp.class, new StringSchema().format("date-time"));
 
         // Duration: string with "s" suffix
-        map.put(Duration.class, createDurationSchema());
+        map.put(Duration.class, new StringSchema().pattern("^-?\\d+(\\.\\d+)?s$"));
 
         // Wrapper types: same as wrapped primitive type, but nullable
-        map.put(BoolValue.class, createNullableBooleanSchema());
-        map.put(Int32Value.class, createNullableInt32Schema());
-        map.put(Int64Value.class, createNullableInt64Schema());
-        map.put(UInt32Value.class, createNullableUInt32Schema());
-        map.put(UInt64Value.class, createNullableUInt64Schema());
-        map.put(FloatValue.class, createNullableFloatSchema());
-        map.put(DoubleValue.class, createNullableDoubleSchema());
-        map.put(StringValue.class, createNullableStringSchema());
-        map.put(BytesValue.class, createNullableBytesSchema());
+        map.put(BoolValue.class, new BooleanSchema());
+        map.put(Int32Value.class, new IntegerSchema());
+        map.put(Int64Value.class, new IntegerSchema().format("int64"));
+        map.put(UInt32Value.class, new IntegerSchema().minimum(BigDecimal.ONE));
+        map.put(UInt64Value.class, new IntegerSchema().format("int64").minimum(BigDecimal.ONE));
+        map.put(FloatValue.class, new NumberSchema().format("float"));
+        map.put(DoubleValue.class, new NumberSchema().format("double"));
+        map.put(StringValue.class, new StringSchema());
+        map.put(BytesValue.class, new StringSchema().format("byte"));
 
         return Map.copyOf(map);
     }
@@ -315,173 +316,30 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
         Map<Class<?>, Schema<?>> map = new HashMap<>();
 
         // Any: object with @type field
-        map.put(Any.class, createAnySchema());
+        map.put(Any.class, new ObjectSchema().additionalProperties(true).addProperty("@type", new StringSchema()));
 
         // Struct: any JSON object
-        map.put(Struct.class, createStructSchema());
+        map.put(Struct.class, new ObjectSchema().additionalProperties(true));
 
         // ListValue: array
-        map.put(ListValue.class, createListValueSchema());
+        map.put(ListValue.class, new ArraySchema().items(new Schema<>()));
 
         // Value: any JSON value
-        map.put(Value.class, createValueSchema());
+        map.put(Value.class, new Schema<>());
 
         // NullValue: null
-        map.put(NullValue.class, createNullValueSchema());
+        map.put(NullValue.class, new Schema<>());
 
         // FieldMask: string
-        map.put(FieldMask.class, createFieldMaskSchema());
+        map.put(FieldMask.class, new Schema<>()); // TODO(Freeman): StringSchema?
 
         // Empty: empty object
-        map.put(Empty.class, createEmptySchema());
+        map.put(Empty.class, new ObjectSchema());
 
         // ByteString: base64 string
-        map.put(ByteString.class, createByteStringSchema());
+        map.put(ByteString.class, new StringSchema().format("byte"));
 
         return Map.copyOf(map);
-    }
-
-    static Schema<?> createTimestampSchema() {
-        StringSchema schema = new StringSchema();
-        schema.setFormat("date-time");
-        schema.setExample("1970-01-01T00:00:00Z");
-        return schema;
-    }
-
-    private static Schema<?> createDurationSchema() {
-        StringSchema schema = new StringSchema();
-        schema.setPattern("^-?\\d+(\\.\\d+)?s$");
-        schema.setExample("1.000340012s");
-        return schema;
-    }
-
-    private static Schema<?> createNullableBooleanSchema() {
-        BooleanSchema schema = new BooleanSchema();
-        schema.setNullable(true);
-        schema.setExample(false);
-        return schema;
-    }
-
-    private static Schema<?> createNullableInt32Schema() {
-        IntegerSchema schema = new IntegerSchema();
-        schema.setFormat("int32");
-        schema.setNullable(true);
-        schema.setExample(0);
-        return schema;
-    }
-
-    private static Schema<?> createNullableInt64Schema() {
-        StringSchema schema = new StringSchema();
-        schema.setNullable(true);
-        schema.setExample("0");
-        return schema;
-    }
-
-    private static Schema<?> createNullableUInt32Schema() {
-        IntegerSchema schema = new IntegerSchema();
-        schema.setFormat("int32");
-        schema.setMinimum(java.math.BigDecimal.ZERO);
-        schema.setNullable(true);
-        schema.setExample(0);
-        return schema;
-    }
-
-    private static Schema<?> createNullableUInt64Schema() {
-        StringSchema schema = new StringSchema();
-        schema.setNullable(true);
-        schema.setExample("0");
-        return schema;
-    }
-
-    private static Schema<?> createNullableFloatSchema() {
-        NumberSchema schema = new NumberSchema();
-        schema.setFormat("float");
-        schema.setNullable(true);
-        schema.setExample(0.0);
-        return schema;
-    }
-
-    private static Schema<?> createNullableDoubleSchema() {
-        NumberSchema schema = new NumberSchema();
-        schema.setFormat("double");
-        schema.setNullable(true);
-        schema.setExample(0.0);
-        return schema;
-    }
-
-    private static Schema<?> createNullableStringSchema() {
-        StringSchema schema = new StringSchema();
-        schema.setNullable(true);
-        schema.setExample("");
-        return schema;
-    }
-
-    private static Schema<?> createNullableBytesSchema() {
-        StringSchema schema = new StringSchema();
-        schema.setFormat("byte");
-        schema.setNullable(true);
-        schema.setExample("YWJjMTIzIT8kKiYoKSctPUB+");
-        return schema;
-    }
-
-    private static Schema<?> createAnySchema() {
-        ObjectSchema schema = new ObjectSchema();
-        schema.addProperty("@type", new StringSchema().example("type.googleapis.com/google.type.Date"));
-        schema.setAdditionalProperties(true);
-        schema.setExample(Map.of("@type", "type.googleapis.com/google.type.Date", "day", 1, "month", 1, "year", 1970));
-        return schema;
-    }
-
-    private static Schema<?> createStructSchema() {
-        ObjectSchema schema = new ObjectSchema();
-        schema.setAdditionalProperties(true);
-        schema.setExample(Map.of("key1", "value1", "key2", 2, "key3", true));
-        return schema;
-    }
-
-    private static Schema<?> createListValueSchema() {
-        ArraySchema schema = new ArraySchema();
-        schema.setItems(createValueSchema());
-        schema.setExample(List.of("v1", "v2"));
-        return schema;
-    }
-
-    private static Schema<?> createValueSchema() {
-        Schema<?> schema = new Schema<>();
-        schema.setExample("any value");
-        return schema;
-    }
-
-    private static Schema<?> createNullValueSchema() {
-        Schema<?> schema = new Schema<>();
-        schema.setNullable(true);
-        schema.setExample(null);
-        return schema;
-    }
-
-    private static Schema<?> createFieldMaskSchema() {
-        StringSchema schema = new StringSchema();
-        schema.setExample("f.fooBar,h");
-        return schema;
-    }
-
-    private static Schema<?> createEmptySchema() {
-        ObjectSchema schema = new ObjectSchema();
-        schema.setExample(Map.of());
-        return schema;
-    }
-
-    private static Schema<?> createByteStringSchema() {
-        StringSchema schema = new StringSchema();
-        schema.setFormat("byte");
-        schema.setExample("YWJjMTIzIT8kKiYoKSctPUB+");
-        return schema;
-    }
-
-    private static Schema<?> createStringArraySchema() {
-        ArraySchema schema = new ArraySchema();
-        schema.setItems(new StringSchema());
-        return schema;
     }
 
     /**
