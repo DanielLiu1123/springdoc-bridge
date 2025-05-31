@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package user.v1;
+
+option java_multiple_files = true;
+option java_package = "user.v1";
+
+message User {
+  string id = 1;
+  string username = 2;
+  Status status = 4;
+
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    ACTIVE = 1;
+    INACTIVE = 2;
+    SUSPENDED = 3;
+  }
+}

@@ -1,6 +1,11 @@
 package springdocbridge.protobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,6 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springdoc.core.providers.ObjectMapperProvider;
+import user.v1.User;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ProtobufWellKnownTypeModelConverter Tests")
@@ -210,7 +216,50 @@ class ProtobufWellKnownTypeModelConverterTest {
         }
     }
 
-    private AnnotatedType createAnnotatedType(Class<?> clazz) {
+    @Nested
+    @DisplayName("Protobuf Enum Schema Tests")
+    class ProtobufEnumSchemaTests {
+
+        @Test
+        @DisplayName("Should convert protobuf enum to $ref schema")
+        void shouldConvertProtobufEnumToRefSchema() {
+            // Given
+            var annotatedType = createAnnotatedType(User.Status.class);
+
+            // When
+            var schema = converter.resolve(annotatedType, context, chain);
+
+            // Then
+            assertThat(schema).isNotNull();
+            assertThat(schema.get$ref()).isEqualTo("#/components/schemas/user.v1.User.Status");
+
+            // Verify that the enum schema was registered in the context
+            verify(context).defineModel(eq("user.v1.User.Status"), any(StringSchema.class));
+        }
+
+        @Test
+        @DisplayName("Should reuse existing enum schema when called multiple times")
+        void shouldReuseExistingEnumSchemaWhenCalledMultipleTimes() {
+            // Given
+            var annotatedType = createAnnotatedType(User.Status.class);
+            when(context.getDefinedModels()).thenReturn(Map.of("user.v1.User.Status", new StringSchema()));
+
+            // When
+            var schema1 = converter.resolve(annotatedType, context, chain);
+            var schema2 = converter.resolve(annotatedType, context, chain);
+
+            // Then
+            assertThat(schema1).isNotNull();
+            assertThat(schema1.get$ref()).isEqualTo("#/components/schemas/user.v1.User.Status");
+            assertThat(schema2).isNotNull();
+            assertThat(schema2.get$ref()).isEqualTo("#/components/schemas/user.v1.User.Status");
+
+            // Verify that defineModel was not called since the schema already exists
+            verify(context, never()).defineModel(anyString(), any());
+        }
+    }
+
+    private static AnnotatedType createAnnotatedType(Class<?> clazz) {
         return new AnnotatedType(clazz);
     }
 }

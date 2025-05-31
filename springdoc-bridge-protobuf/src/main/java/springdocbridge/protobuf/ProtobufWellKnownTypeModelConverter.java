@@ -123,7 +123,7 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
 
         // Handle protobuf enums
         if (ProtocolMessageEnum.class.isAssignableFrom(cls) && cls.isEnum()) {
-            return createProtobufEnumSchema(cls);
+            return createProtobufEnumSchemaWithRef(cls, context);
         }
 
         // Handle protobuf MapField - convert to simple object with additionalProperties
@@ -379,8 +379,27 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
         return schema;
     }
 
-    private static Schema<?> createProtobufEnumSchema(Class<?> protobufEnumClass) {
-        StringSchema schema = new StringSchema();
+    /**
+     * Creates a reusable protobuf enum schema with $ref reference.
+     *
+     * <p> This method generates enum schemas that are registered in the OpenAPI components/schemas
+     * section and returns a $ref to enable reuse across the API documentation.
+     *
+     * @see <a href="https://github.com/DanielLiu1123/springdoc-bridge/issues/5">Reuse enum</a>
+     */
+    private static Schema<?> createProtobufEnumSchemaWithRef(
+            Class<?> protobufEnumClass, ModelConverterContext context) {
+        // Generate a unique schema name for the enum
+        String enumSchemaName = protobufEnumClass.getCanonicalName();
+
+        // Check if the enum schema is already defined
+        if (context.getDefinedModels().containsKey(enumSchemaName)) {
+            // Return a $ref to the existing schema
+            return new Schema<>().$ref("#/components/schemas/" + enumSchemaName);
+        }
+
+        // Create the enum schema
+        StringSchema enumSchema = new StringSchema();
 
         // Get enum values
         if (protobufEnumClass.isEnum()) {
@@ -390,11 +409,15 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
                         .map(Object::toString)
                         .filter(s -> !Objects.equals(s, "UNRECOGNIZED"))
                         .toList();
-                schema.setEnum(enumValues);
+                enumSchema.setEnum(enumValues);
             }
         }
 
-        return schema;
+        // Register the enum schema in the context
+        context.defineModel(enumSchemaName, enumSchema);
+
+        // Return a $ref to the registered schema
+        return new Schema<>().$ref("#/components/schemas/" + enumSchemaName);
     }
 
     /**
