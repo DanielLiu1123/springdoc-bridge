@@ -109,6 +109,7 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Schema<?> resolve(AnnotatedType type, ModelConverterContext context, Iterator<ModelConverter> chain) {
         JavaType javaType = springDocObjectMapper.jsonMapper().constructType(type.getType());
         if (javaType == null) {
@@ -301,9 +302,9 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
         // Wrapper types: same as wrapped primitive type, but nullable
         map.put(BoolValue.class, new BooleanSchema());
         map.put(Int32Value.class, new IntegerSchema().format("int32"));
-        map.put(UInt32Value.class, new IntegerSchema().format("int32").minimum(BigDecimal.ONE));
+        map.put(UInt32Value.class, new IntegerSchema().format("int32").minimum(BigDecimal.ZERO));
         map.put(Int64Value.class, new IntegerSchema().format("int64"));
-        map.put(UInt64Value.class, new IntegerSchema().format("int64").minimum(BigDecimal.ONE));
+        map.put(UInt64Value.class, new IntegerSchema().format("int64").minimum(BigDecimal.ZERO));
         map.put(FloatValue.class, new NumberSchema().format("float"));
         map.put(DoubleValue.class, new NumberSchema().format("double"));
         map.put(StringValue.class, new StringSchema());
