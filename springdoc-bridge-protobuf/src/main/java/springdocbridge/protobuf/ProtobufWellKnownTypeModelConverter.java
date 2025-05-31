@@ -13,7 +13,9 @@ import com.google.protobuf.FieldMask;
 import com.google.protobuf.FloatValue;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.Int64Value;
+import com.google.protobuf.Internal;
 import com.google.protobuf.ListValue;
+import com.google.protobuf.MapField;
 import com.google.protobuf.Message;
 import com.google.protobuf.NullValue;
 import com.google.protobuf.ProtocolMessageEnum;
@@ -29,6 +31,8 @@ import io.swagger.v3.core.converter.ModelConverterContext;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.BooleanSchema;
 import io.swagger.v3.oas.models.media.IntegerSchema;
+import io.swagger.v3.oas.models.media.JsonSchema;
+import io.swagger.v3.oas.models.media.MapSchema;
 import io.swagger.v3.oas.models.media.NumberSchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
@@ -87,10 +91,10 @@ import org.springframework.util.StringUtils;
  * }</pre>
  *
  * @author Freeman
- * @since 0.1.0
  * @see ModelConverter
  * @see <a href="https://protobuf.dev/programming-guides/json/">Protobuf JSON Mapping</a>
  * @see SpringDocBridgeProtobufAutoConfiguration
+ * @since 0.1.0
  */
 public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
 
@@ -122,7 +126,12 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
 
         // Handle protobuf enums
         if (ProtocolMessageEnum.class.isAssignableFrom(cls) && cls.isEnum()) {
-            return createProtobufEnumSchema(cls);
+            return createProtobufEnumSchemaWithRef(cls, context);
+        }
+
+        // Handle protobuf MapField - convert to simple object with additionalProperties
+        if (MapField.class.isAssignableFrom(cls)) {
+            return createMapFieldSchema(javaType, context);
         }
 
         // Parse protobuf message
@@ -139,6 +148,13 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
             }
         }
 
+        // Handle protobuf List type
+        if (Internal.ProtobufList.class.isAssignableFrom(cls)) {
+            // There some additional properties added by springdoc, we need to remove them
+            // see AbstractProtobufList
+            schema.properties(null);
+        }
+
         return schema;
     }
 
@@ -151,15 +167,16 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
 
             var resolvedSchema = context.getDefinedModels().get(schemaName);
             if (resolvedSchema != null) {
-                handleField(descriptor, resolvedSchema);
+                handleField(descriptor, resolvedSchema, context);
             }
         } else if (schema.getProperties() != null) {
-            handleField(descriptor, schema);
+            handleField(descriptor, schema, context);
         }
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private static void handleField(Descriptors.Descriptor descriptor, Schema resolvedSchema) {
+    private static void handleField(
+            Descriptors.Descriptor descriptor, Schema resolvedSchema, ModelConverterContext context) {
         Map<String, Schema> properties = resolvedSchema.getProperties();
         if (properties == null || properties.isEmpty()) {
             return;
@@ -170,17 +187,105 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
             }
 
             String propertyName = field.getName();
-            var propertyValue = properties.get(propertyName);
-            if (propertyValue == null) {
+            var schema = properties.get(propertyName);
+            if (schema == null) {
                 propertyName = field.getJsonName();
-                propertyValue = properties.get(propertyName);
+                schema = properties.get(propertyName);
             }
-            if (propertyValue != null) {
-                // OpenAPI 3.x all fields are optional by default, so we need to add required fields manually
-                // see https://spec.openapis.org/oas/v3.0.0.html#schema
-                resolvedSchema.addRequiredItem(propertyName);
+
+            if (schema == null) {
+                continue;
+            }
+
+            // Handle repeated enum fields
+            if (field.isRepeated() && field.getType() == Descriptors.FieldDescriptor.Type.ENUM) {
+                handleFieldForEnum(field, schema, context);
+            }
+
+            // Handle map fields with enum values
+            if (field.isMapField() && field.getType() == Descriptors.FieldDescriptor.Type.MESSAGE) {
+                // For map fields, we need to check the value type of the map entry
+                var mapEntryDescriptor = field.getMessageType();
+                if (mapEntryDescriptor.getFields().size() == 2) {
+                    var valueField = mapEntryDescriptor.getFields().get(1); // value field is always at index 1
+                    if (valueField.getType() == Descriptors.FieldDescriptor.Type.ENUM) {
+                        handleFieldForEnum(valueField, schema, context);
+                    }
+                }
+            }
+
+            // Handle deprecated fields - set deprecated flag in OpenAPI schema
+            if (field.getOptions().getDeprecated()) {
+                schema.setDeprecated(true);
+            }
+
+            // OpenAPI 3.x all fields are optional by default, so we need to add required fields manually
+            // see https://spec.openapis.org/oas/v3.0.0.html#schema
+            resolvedSchema.addRequiredItem(propertyName);
+        }
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static void handleFieldForEnum(
+            Descriptors.FieldDescriptor fieldDescriptor, Schema schema, ModelConverterContext context) {
+
+        var enumDescriptor = fieldDescriptor.getEnumType();
+
+        String enumSchemaName = getEnumClassName(enumDescriptor);
+
+        if (!context.getDefinedModels().containsKey(enumSchemaName)) {
+            StringSchema enumSchema = new StringSchema();
+
+            List<String> enumValues = enumDescriptor.getValues().stream()
+                    .map(Descriptors.EnumValueDescriptor::getName)
+                    .toList();
+            enumSchema.setEnum(enumValues);
+
+            context.defineModel(enumSchemaName, enumSchema);
+        }
+
+        Schema<?> enumRefSchema = new Schema<>().$ref("#/components/schemas/" + enumSchemaName);
+
+        if (schema instanceof ObjectSchema objectSchema) {
+            objectSchema.setAdditionalProperties(enumRefSchema);
+        } else if (schema instanceof MapSchema mapSchema) {
+            mapSchema.setAdditionalProperties(enumRefSchema);
+        } else if (schema instanceof JsonSchema jsonSchema) {
+            jsonSchema.setAdditionalProperties(enumRefSchema);
+        } else if (schema instanceof ArraySchema arraySchema) {
+            arraySchema.setItems(enumRefSchema);
+        } else {
+            var type = schema.getType();
+            if (type == null && schema.getTypes() != null && !schema.getTypes().isEmpty()) {
+                type = (String) schema.getTypes().iterator().next();
+            }
+            if (type != null) {
+                switch (type) {
+                    case "object" -> schema.setAdditionalProperties(enumRefSchema);
+                    case "array" -> schema.setItems(enumRefSchema);
+                    default -> {}
+                }
             }
         }
+    }
+
+    private static String getEnumClassName(Descriptors.EnumDescriptor enumDescriptor) {
+        // Build the full class name for the enum
+        String packageName = enumDescriptor.getFile().getOptions().getJavaPackage();
+        if (packageName.isEmpty()) {
+            packageName = enumDescriptor.getFile().getPackage();
+        }
+
+        // Handle nested enums
+        String className;
+        Descriptors.Descriptor containingType = enumDescriptor.getContainingType();
+        if (containingType != null) {
+            className = containingType.getName() + "." + enumDescriptor.getName();
+        } else {
+            className = enumDescriptor.getName();
+        }
+
+        return packageName + "." + className;
     }
 
     private static Map<Class<?>, Schema<?>> createWellKnownTypeSchemas() {
@@ -373,8 +478,33 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
         return schema;
     }
 
-    private static Schema<?> createProtobufEnumSchema(Class<?> protobufEnumClass) {
-        StringSchema schema = new StringSchema();
+    private static Schema<?> createStringArraySchema() {
+        ArraySchema schema = new ArraySchema();
+        schema.setItems(new StringSchema());
+        return schema;
+    }
+
+    /**
+     * Creates a reusable protobuf enum schema with $ref reference.
+     *
+     * <p> This method generates enum schemas that are registered in the OpenAPI components/schemas
+     * section and returns a $ref to enable reuse across the API documentation.
+     *
+     * @see <a href="https://github.com/DanielLiu1123/springdoc-bridge/issues/5">Reuse enum</a>
+     */
+    private static Schema<?> createProtobufEnumSchemaWithRef(
+            Class<?> protobufEnumClass, ModelConverterContext context) {
+        // Generate a unique schema name for the enum
+        String enumSchemaName = protobufEnumClass.getCanonicalName();
+
+        // Check if the enum schema is already defined
+        if (context.getDefinedModels().containsKey(enumSchemaName)) {
+            // Return a $ref to the existing schema
+            return new Schema<>().$ref("#/components/schemas/" + enumSchemaName);
+        }
+
+        // Create the enum schema
+        StringSchema enumSchema = new StringSchema();
 
         // Get enum values
         if (protobufEnumClass.isEnum()) {
@@ -384,7 +514,59 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
                         .map(Object::toString)
                         .filter(s -> !Objects.equals(s, "UNRECOGNIZED"))
                         .toList();
-                schema.setEnum(enumValues);
+                enumSchema.setEnum(enumValues);
+            }
+        }
+
+        // Register the enum schema in the context
+        context.defineModel(enumSchemaName, enumSchema);
+
+        // Return a $ref to the registered schema
+        return new Schema<>().$ref("#/components/schemas/" + enumSchemaName);
+    }
+
+    /**
+     * Creates a simplified schema for protobuf MapField types.
+     * Instead of exposing the internal MapField structure, this generates
+     * a clean object schema with additionalProperties.
+     */
+    private static Schema<?> createMapFieldSchema(JavaType javaType, ModelConverterContext context) {
+        ObjectSchema schema = new ObjectSchema();
+        schema.setAdditionalProperties(true);
+
+        // Try to determine the value type from the MapField generic parameters
+        if (javaType.containedTypeCount() >= 2) {
+            JavaType valueType = javaType.containedType(1);
+            if (valueType != null) {
+                Class<?> valueClass = valueType.getRawClass();
+
+                // Set additionalProperties to the appropriate schema based on value type
+                if (String.class.equals(valueClass)) {
+                    schema.setAdditionalProperties(new StringSchema());
+                } else if (Integer.class.equals(valueClass) || int.class.equals(valueClass)) {
+                    schema.setAdditionalProperties(new IntegerSchema().format("int32"));
+                } else if (Long.class.equals(valueClass) || long.class.equals(valueClass)) {
+                    schema.setAdditionalProperties(new IntegerSchema().format("int64"));
+                } else if (Boolean.class.equals(valueClass) || boolean.class.equals(valueClass)) {
+                    schema.setAdditionalProperties(new BooleanSchema());
+                } else if (Double.class.equals(valueClass) || double.class.equals(valueClass)) {
+                    schema.setAdditionalProperties(new NumberSchema().format("double"));
+                } else if (Float.class.equals(valueClass) || float.class.equals(valueClass)) {
+                    schema.setAdditionalProperties(new NumberSchema().format("float"));
+                } else if (ProtocolMessageEnum.class.isAssignableFrom(valueClass) && valueClass.isEnum()) {
+                    // Handle protobuf enum values - create $ref to enum schema
+                    Schema<?> enumSchema = createProtobufEnumSchemaWithRef(valueClass, context);
+                    schema.setAdditionalProperties(enumSchema);
+                } else if (Message.class.isAssignableFrom(valueClass)) {
+                    // Handle protobuf message values - create $ref to message schema
+                    ProtobufNameResolver nameResolver = new ProtobufNameResolver();
+                    String messageSchemaName = nameResolver.getNameOfClass(valueClass);
+                    Schema<?> messageRefSchema = new Schema<>().$ref("#/components/schemas/" + messageSchemaName);
+                    schema.setAdditionalProperties(messageRefSchema);
+                } else {
+                    // For other complex types, just use true to allow any value
+                    schema.setAdditionalProperties(true);
+                }
             }
         }
 

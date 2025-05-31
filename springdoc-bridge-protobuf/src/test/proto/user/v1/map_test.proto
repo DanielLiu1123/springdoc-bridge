@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package user.v1;
+
+import "user/v1/user.proto";
+
+option java_multiple_files = true;
+option java_package = "user.v1";
+
+// Test message for map field handling
+message MapTestMessage {
+
+  // Map with string values (basic type)
+  map<string, string> metadata = 1;
+  
+  // Map with enum values
+  map<string, Status> status_map = 2;
+  
+  // Map with message values
+  map<string, Address> address_map = 3;
+  
+  // Map with integer values
+  map<string, int32> score_map = 4;
+  
+  // Map with boolean values
+  map<string, bool> feature_flags = 5;
+
+  // Deprecated map field for testing deprecated functionality
+  map<string, string> deprecated_map = 6 [deprecated = true];
+
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    ACTIVE = 1;
+    INACTIVE = 2;
+    PENDING = 3;
+  }
+
+  message Address {
+    string street = 1;
+    string city = 2;
+    string country = 3;
+  }
+}

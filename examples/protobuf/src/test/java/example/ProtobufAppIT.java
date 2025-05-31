@@ -122,11 +122,17 @@ class ProtobufAppIT {
             assertThat(properties.has("username")).isTrue();
             assertThat(properties.has("email")).isTrue();
 
-            // Verify enum fields are mapped to strings
+            // Verify enum fields use $ref references
             JsonNode genderField = properties.get("gender");
-            assertThat(genderField.get("type").asText()).isEqualTo("string");
-            assertThat(genderField.has("enum")).isTrue();
-            assertThat(genderField.get("enum").toString()).contains("GENDER_UNSPECIFIED", "MALE", "FEMALE", "OTHER");
+            assertThat(genderField.has("$ref")).isTrue();
+            assertThat(genderField.get("$ref").asText()).isEqualTo("#/components/schemas/user.v1.User.Gender");
+
+            // Verify the referenced enum schema exists and has correct values
+            JsonNode genderSchema = apiDocs.get("components").get("schemas").get("user.v1.User.Gender");
+            assertThat(genderSchema).isNotNull();
+            assertThat(genderSchema.get("type").asText()).isEqualTo("string");
+            assertThat(genderSchema.has("enum")).isTrue();
+            assertThat(genderSchema.get("enum").toString()).contains("GENDER_UNSPECIFIED", "MALE", "FEMALE", "OTHER");
 
             // Verify nested message references
             JsonNode addressField = properties.get("address");
@@ -156,10 +162,51 @@ class ProtobufAppIT {
             assertThat(properties.has("city")).isTrue();
             assertThat(properties.has("type")).isTrue();
 
-            // Verify nested enums
+            // Verify nested enums use $ref references
             JsonNode typeField = properties.get("type");
-            assertThat(typeField.get("type").asText()).isEqualTo("string");
-            assertThat(typeField.has("enum")).isTrue();
+            assertThat(typeField.has("$ref")).isTrue();
+            assertThat(typeField.get("$ref").asText()).isEqualTo("#/components/schemas/user.v1.User.AddressType");
+
+            // Verify the referenced enum schema exists
+            JsonNode addressTypeSchema =
+                    apiDocs.get("components").get("schemas").get("user.v1.User.AddressType");
+            assertThat(addressTypeSchema).isNotNull();
+            assertThat(addressTypeSchema.get("type").asText()).isEqualTo("string");
+            assertThat(addressTypeSchema.has("enum")).isTrue();
+        }
+
+        @Test
+        @DisplayName("Array fields should not have properties")
+        void arrayFieldsShouldNotHaveProperties() throws IOException {
+            // Given
+            JsonNode apiDocs = getApiDocs();
+            JsonNode userSchema = apiDocs.get("components").get("schemas").get("user.v1.User");
+
+            // Then
+            assertThat(userSchema).isNotNull();
+            JsonNode properties = userSchema.get("properties");
+            assertThat(properties).isNotNull();
+
+            // Verify tags field (repeated string) is a proper array without properties
+            JsonNode tagsField = properties.get("tags");
+            assertThat(tagsField).isNotNull();
+            assertThat(tagsField.get("type").asText()).isEqualTo("array");
+            assertThat(tagsField.get("items").get("type").asText()).isEqualTo("string");
+            assertThat(tagsField.has("properties")).isFalse(); // This should not exist for arrays
+
+            // Verify addresses field (repeated message) is a proper array without properties
+            JsonNode addressesField = properties.get("addresses");
+            assertThat(addressesField).isNotNull();
+            assertThat(addressesField.get("type").asText()).isEqualTo("array");
+            assertThat(addressesField.get("items").has("$ref")).isTrue();
+            assertThat(addressesField.has("properties")).isFalse(); // This should not exist for arrays
+
+            // Verify phoneNumbers field (repeated message) is a proper array without properties
+            JsonNode phoneNumbersField = properties.get("phoneNumbers");
+            assertThat(phoneNumbersField).isNotNull();
+            assertThat(phoneNumbersField.get("type").asText()).isEqualTo("array");
+            assertThat(phoneNumbersField.get("items").has("$ref")).isTrue();
+            assertThat(phoneNumbersField.has("properties")).isFalse(); // This should not exist for arrays
         }
     }
 

@@ -12,4 +12,5 @@ dependencies {
     testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${springDocsVersion}")
 }
 
+apply from: "${rootDir}/gradle/protobuf.gradle"
 apply from: "${rootDir}/gradle/deploy.gradle"

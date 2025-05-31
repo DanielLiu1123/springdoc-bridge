@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package user.v1;
+
+option java_multiple_files = true;
+option java_package = "user.v1";
+
+message User {
+  string id = 1;
+  string username = 2;
+  Status status = 4;
+
+  // repeated fields
+  repeated string tags = 5;
+  repeated PhoneNumber phone_numbers = 6;
+  repeated Status status_history = 7;
+  repeated int32 tag_ids = 8;
+
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    ACTIVE = 1;
+    INACTIVE = 2;
+    SUSPENDED = 3;
+  }
+
+  message PhoneNumber {
+    string number = 1;
+    string country_code = 2;
+  }
+}

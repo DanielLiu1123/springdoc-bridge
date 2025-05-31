@@ -16,7 +16,7 @@ class SpringDocBridgeProtobufAutoConfigurationIT {
     @Test
     @DisplayName("Should auto-configure when all conditions are met")
     void shouldAutoConfigureWhenAllConditionsMet() {
-        try (var ctx = new SpringApplicationBuilder(TestConfig.class).run()) {
+        try (var ctx = newAppBuilder().run()) {
             assertThatCode(() -> ctx.getBean(SpringDocBridgeProtobufAutoConfiguration.class))
                     .doesNotThrowAnyException();
 
@@ -34,9 +34,8 @@ class SpringDocBridgeProtobufAutoConfigurationIT {
     @Test
     @DisplayName("Should not auto-configure when SpringDoc is disabled")
     void shouldNotAutoConfigureWhenSpringDocDisabled() {
-        try (var ctx = new SpringApplicationBuilder(TestConfig.class)
-                .properties("springdoc.api-docs.enabled=false")
-                .run()) {
+        try (var ctx =
+                newAppBuilder().properties("springdoc.api-docs.enabled=false").run()) {
             assertThatCode(() -> ctx.getBean(SpringDocBridgeProtobufAutoConfiguration.class))
                     .isInstanceOf(NoSuchBeanDefinitionException.class);
         }
@@ -45,7 +44,7 @@ class SpringDocBridgeProtobufAutoConfigurationIT {
     @Test
     @DisplayName("Should not auto-configure when protobuf support is disabled")
     void shouldNotAutoConfigureWhenProtobufSupportDisabled() {
-        try (var ctx = new SpringApplicationBuilder(TestConfig.class)
+        try (var ctx = newAppBuilder()
                 .properties("springdoc-bridge.protobuf.enabled=false")
                 .run()) {
             assertThatCode(() -> ctx.getBean(SpringDocBridgeProtobufAutoConfiguration.class))
@@ -56,7 +55,7 @@ class SpringDocBridgeProtobufAutoConfigurationIT {
     @Test
     @DisplayName("Should register ProtobufModule with Jackson when enabled")
     void shouldRegisterProtobufModuleWhenEnabled() {
-        try (var ctx = new SpringApplicationBuilder(TestConfig.class).run()) {
+        try (var ctx = newAppBuilder().run()) {
             assertThatCode(() -> ctx.getBean("springDocBridgeProtobufJackson2ObjectMapperBuilderCustomizer"))
                     .doesNotThrowAnyException();
         }
@@ -65,7 +64,7 @@ class SpringDocBridgeProtobufAutoConfigurationIT {
     @Test
     @DisplayName("Should not register ProtobufModule when disabled")
     void shouldNotRegisterProtobufModuleWhenDisabled() {
-        try (var ctx = new SpringApplicationBuilder(TestConfig.class)
+        try (var ctx = newAppBuilder()
                 .properties("springdoc-bridge.protobuf.register-protobuf-module=false")
                 .run()) {
             assertThatCode(() -> ctx.getBean("springDocBridgeProtobufJackson2ObjectMapperBuilderCustomizer"))
@@ -76,7 +75,7 @@ class SpringDocBridgeProtobufAutoConfigurationIT {
     @Test
     @DisplayName("Should register ProtobufWellKnownTypeModelConverter")
     void shouldRegisterProtobufWellKnownTypeModelConverter() {
-        try (var ctx = new SpringApplicationBuilder(TestConfig.class).run()) {
+        try (var ctx = newAppBuilder().run()) {
             assertThatCode(() -> ctx.getBean(ProtobufWellKnownTypeModelConverter.class))
                     .doesNotThrowAnyException();
         }
@@ -85,7 +84,7 @@ class SpringDocBridgeProtobufAutoConfigurationIT {
     @Test
     @DisplayName("Should register ProtobufSchemaModule with ObjectMapper")
     void shouldRegisterProtobufSchemaModuleWithObjectMapper() {
-        try (var ctx = new SpringApplicationBuilder(TestConfig.class).run()) {
+        try (var ctx = newAppBuilder().run()) {
             var objectMapperProvider = ctx.getBean(ObjectMapperProvider.class);
             var objectMapper = objectMapperProvider.jsonMapper();
 
@@ -93,6 +92,10 @@ class SpringDocBridgeProtobufAutoConfigurationIT {
             var registeredModules = objectMapper.getRegisteredModuleIds();
             assertThat(registeredModules).contains(ProtobufSchemaModule.class.getName());
         }
+    }
+
+    private static SpringApplicationBuilder newAppBuilder() {
+        return new SpringApplicationBuilder(TestConfig.class).properties("server.port=0");
     }
 
     @Configuration(proxyBeanMethods = false)

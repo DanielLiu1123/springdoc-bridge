@@ -19,13 +19,15 @@ message User {
   int32 age = 8;
   UserStatus status = 9;
   Address address = 10;
-  repeated PhoneNumber phone_numbers = 11;
-  repeated string tags = 12;
-  map<string, string> metadata = 13;
-  UserPreferences preferences = 14;
-  google.protobuf.Timestamp created_at = 15;
-  google.protobuf.Timestamp updated_at = 16;
-  google.protobuf.Timestamp last_login_at = 17;
+  repeated Address addresses = 11;
+  repeated PhoneNumber phone_numbers = 12;
+  repeated string tags = 13;
+  map<string, string> metadata = 14;
+  map<string, PhoneNumber> phone_number_map = 15;
+  UserPreferences preferences = 16;
+  google.protobuf.Timestamp created_at = 17;
+  google.protobuf.Timestamp updated_at = 18;
+  google.protobuf.Timestamp last_login_at = 19;
 
   // Nested message for address
   message Address {

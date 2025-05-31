@@ -1,6 +1,7 @@
 package springdocbridge.protobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,46 +17,27 @@ import com.google.protobuf.StringValue;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Timestamp;
 import io.swagger.v3.core.converter.AnnotatedType;
-import io.swagger.v3.core.converter.ModelConverter;
 import io.swagger.v3.core.converter.ModelConverterContext;
+import io.swagger.v3.core.converter.ModelConverterContextImpl;
+import io.swagger.v3.core.converter.ModelConverters;
+import io.swagger.v3.core.jackson.ModelResolver;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.BooleanSchema;
 import io.swagger.v3.oas.models.media.IntegerSchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
+import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springdoc.core.providers.ObjectMapperProvider;
+import user.v1.MapTestMessage;
+import user.v1.User;
 
-@ExtendWith(MockitoExtension.class)
 @DisplayName("ProtobufWellKnownTypeModelConverter Tests")
 class ProtobufWellKnownTypeModelConverterTest {
-
-    @Mock
-    private ObjectMapperProvider objectMapperProvider;
-
-    @Mock
-    private ModelConverterContext context;
-
-    @Mock
-    private Iterator<ModelConverter> chain;
-
-    private ProtobufWellKnownTypeModelConverter converter;
-
-    @BeforeEach
-    void setUp() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        when(objectMapperProvider.jsonMapper()).thenReturn(objectMapper);
-        converter = new ProtobufWellKnownTypeModelConverter(objectMapperProvider);
-    }
 
     @Nested
     @DisplayName("Well-Known Types Schema Tests")
@@ -64,9 +46,7 @@ class ProtobufWellKnownTypeModelConverterTest {
         @Test
         @DisplayName("Should convert Timestamp to date-time string schema")
         void shouldConvertTimestampToDateTimeStringSchema() {
-            var annotatedType = createAnnotatedType(Timestamp.class);
-
-            var schema = converter.resolve(annotatedType, context, chain);
+            var schema = resolve(Timestamp.class);
 
             assertThat(schema).isInstanceOf(StringSchema.class);
             var stringSchema = (StringSchema) schema;
@@ -77,9 +57,7 @@ class ProtobufWellKnownTypeModelConverterTest {
         @Test
         @DisplayName("Should convert Duration to string schema with pattern")
         void shouldConvertDurationToStringSchemaWithPattern() {
-            var annotatedType = createAnnotatedType(Duration.class);
-
-            var schema = converter.resolve(annotatedType, context, chain);
+            var schema = resolve(Duration.class);
 
             assertThat(schema).isInstanceOf(StringSchema.class);
             var stringSchema = (StringSchema) schema;
@@ -90,9 +68,7 @@ class ProtobufWellKnownTypeModelConverterTest {
         @Test
         @DisplayName("Should convert BoolValue to nullable boolean schema")
         void shouldConvertBoolValueToNullableBooleanSchema() {
-            var annotatedType = createAnnotatedType(BoolValue.class);
-
-            var schema = converter.resolve(annotatedType, context, chain);
+            var schema = resolve(BoolValue.class);
 
             assertThat(schema).isInstanceOf(BooleanSchema.class);
             var booleanSchema = (BooleanSchema) schema;
@@ -103,9 +79,7 @@ class ProtobufWellKnownTypeModelConverterTest {
         @Test
         @DisplayName("Should convert Int32Value to nullable integer schema")
         void shouldConvertInt32ValueToNullableIntegerSchema() {
-            var annotatedType = createAnnotatedType(Int32Value.class);
-
-            var schema = converter.resolve(annotatedType, context, chain);
+            var schema = resolve(Int32Value.class);
 
             assertThat(schema).isInstanceOf(IntegerSchema.class);
             var integerSchema = (IntegerSchema) schema;
@@ -117,9 +91,7 @@ class ProtobufWellKnownTypeModelConverterTest {
         @Test
         @DisplayName("Should convert StringValue to nullable string schema")
         void shouldConvertStringValueToNullableStringSchema() {
-            var annotatedType = createAnnotatedType(StringValue.class);
-
-            var schema = converter.resolve(annotatedType, context, chain);
+            var schema = resolve(StringValue.class);
 
             assertThat(schema).isInstanceOf(StringSchema.class);
             var stringSchema = (StringSchema) schema;
@@ -135,9 +107,7 @@ class ProtobufWellKnownTypeModelConverterTest {
         @Test
         @DisplayName("Should convert Any to object schema with @type field")
         void shouldConvertAnyToObjectSchemaWithTypeField() {
-            var annotatedType = createAnnotatedType(Any.class);
-
-            var schema = converter.resolve(annotatedType, context, chain);
+            var schema = resolve(Any.class);
 
             assertThat(schema).isInstanceOf(ObjectSchema.class);
             var objectSchema = (ObjectSchema) schema;
@@ -149,9 +119,7 @@ class ProtobufWellKnownTypeModelConverterTest {
         @Test
         @DisplayName("Should convert Struct to object schema with additional properties")
         void shouldConvertStructToObjectSchemaWithAdditionalProperties() {
-            var annotatedType = createAnnotatedType(Struct.class);
-
-            var schema = converter.resolve(annotatedType, context, chain);
+            var schema = resolve(Struct.class);
 
             assertThat(schema).isInstanceOf(ObjectSchema.class);
             var objectSchema = (ObjectSchema) schema;
@@ -162,9 +130,7 @@ class ProtobufWellKnownTypeModelConverterTest {
         @Test
         @DisplayName("Should convert ListValue to array schema")
         void shouldConvertListValueToArraySchema() {
-            var annotatedType = createAnnotatedType(ListValue.class);
-
-            var schema = converter.resolve(annotatedType, context, chain);
+            var schema = resolve(ListValue.class);
 
             assertThat(schema).isInstanceOf(ArraySchema.class);
             var arraySchema = (ArraySchema) schema;
@@ -175,9 +141,7 @@ class ProtobufWellKnownTypeModelConverterTest {
         @Test
         @DisplayName("Should convert FieldMask to string schema")
         void shouldConvertFieldMaskToStringSchema() {
-            var annotatedType = createAnnotatedType(FieldMask.class);
-
-            var schema = converter.resolve(annotatedType, context, chain);
+            var schema = resolve(FieldMask.class);
 
             assertThat(schema).isInstanceOf(StringSchema.class);
             var stringSchema = (StringSchema) schema;
@@ -187,9 +151,7 @@ class ProtobufWellKnownTypeModelConverterTest {
         @Test
         @DisplayName("Should convert Empty to empty object schema")
         void shouldConvertEmptyToEmptyObjectSchema() {
-            var annotatedType = createAnnotatedType(Empty.class);
-
-            var schema = converter.resolve(annotatedType, context, chain);
+            var schema = resolve(Empty.class);
 
             assertThat(schema).isInstanceOf(ObjectSchema.class);
             var objectSchema = (ObjectSchema) schema;
@@ -199,9 +161,7 @@ class ProtobufWellKnownTypeModelConverterTest {
         @Test
         @DisplayName("Should convert ByteString to base64 string schema")
         void shouldConvertByteStringToBase64StringSchema() {
-            var annotatedType = createAnnotatedType(ByteString.class);
-
-            var schema = converter.resolve(annotatedType, context, chain);
+            var schema = resolve(ByteString.class);
 
             assertThat(schema).isInstanceOf(StringSchema.class);
             var stringSchema = (StringSchema) schema;
@@ -210,7 +170,152 @@ class ProtobufWellKnownTypeModelConverterTest {
         }
     }
 
-    private AnnotatedType createAnnotatedType(Class<?> clazz) {
-        return new AnnotatedType(clazz);
+    @Nested
+    @DisplayName("Protobuf Enum Schema Tests")
+    class ProtobufEnumSchemaTests {
+
+        @Test
+        @DisplayName("Should convert protobuf enum to $ref schema")
+        void shouldConvertProtobufEnumToRefSchema() {
+            // Given
+            var schema = resolve(User.Status.class);
+
+            // Then
+            assertThat(schema).isNotNull();
+            assertThat(schema.get$ref()).isEqualTo("#/components/schemas/user.v1.User.Status");
+        }
+    }
+
+    @Nested
+    @DisplayName("Protobuf repeated fields tests")
+    class ProtobufRepeatedFieldsTests {
+
+        @Test
+        @DisplayName("Should convert repeated string field to array schema")
+        void shouldConvertRepeatedStringFieldToArraySchema() {
+            var schema = resolve(User.class);
+
+            var tagsSchema = schema.getProperties().get("tags");
+            assertThat(tagsSchema).isInstanceOf(ArraySchema.class);
+            var arraySchema = (ArraySchema) tagsSchema;
+            assertThat(arraySchema.getItems()).isInstanceOf(StringSchema.class);
+            assertThat(arraySchema.getProperties()).isNull();
+        }
+
+        @Test
+        @DisplayName("Should convert repeated int field to array schema")
+        void shouldConvertRepeatedIntFieldToArraySchema() {
+            var schema = resolve(User.class);
+
+            var ageSchema = schema.getProperties().get("tagIds");
+            assertThat(ageSchema).isInstanceOf(ArraySchema.class);
+            var arraySchema = (ArraySchema) ageSchema;
+            assertThat(arraySchema.getItems()).isInstanceOf(IntegerSchema.class);
+            assertThat(arraySchema.getProperties()).isNull();
+        }
+
+        @Test
+        @DisplayName("Should convert repeated enum field to array schema")
+        void shouldConvertRepeatedEnumFieldToArraySchema() {
+            var schema = resolve(User.class);
+
+            var statusHistorySchema = schema.getProperties().get("statusHistory");
+            assertThat(statusHistorySchema).isInstanceOf(ArraySchema.class);
+            var arraySchema = (ArraySchema) statusHistorySchema;
+            assertThat(arraySchema.getItems().get$ref()).isEqualTo("#/components/schemas/user.v1.User.Status");
+            assertThat(arraySchema.getProperties()).isNull();
+        }
+
+        @Test
+        @DisplayName("Should convert repeated message field to array schema")
+        void shouldConvertRepeatedMessageFieldToArraySchema() {
+            var schema = resolve(User.class);
+
+            var phoneNumbersSchema = schema.getProperties().get("phoneNumbers");
+            assertThat(phoneNumbersSchema).isInstanceOf(ArraySchema.class);
+            var arraySchema = (ArraySchema) phoneNumbersSchema;
+            assertThat(arraySchema.getItems().get$ref()).isNotNull();
+            assertThat(arraySchema.getItems().getProperties()).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("Protobuf map fields tests")
+    class ProtobufMapFieldsTests {
+
+        @Test
+        @DisplayName("Should convert map with string values to object schema")
+        void shouldConvertMapWithStringValuesToObjectSchema() {
+            var schema = resolve(MapTestMessage.class);
+
+            var metadataSchema = (Schema<?>) schema.getProperties().get("metadata");
+            assertThat(metadataSchema.getAdditionalProperties()).isInstanceOf(Schema.class);
+            var additionalPropertiesSchema = (Schema<?>) metadataSchema.getAdditionalProperties();
+            assertThat(additionalPropertiesSchema.getType()).isEqualTo("string");
+        }
+
+        @Test
+        @DisplayName("Should convert map with enum values to object schema")
+        void shouldConvertMapWithEnumValuesToObjectSchema() {
+            var schema = resolve(MapTestMessage.class);
+
+            var statusMapSchema = (Schema<?>) schema.getProperties().get("statusMap");
+            var additionalPropertiesSchema = (Schema<?>) statusMapSchema.getAdditionalProperties();
+            assertThat(additionalPropertiesSchema.get$ref())
+                    .isEqualTo("#/components/schemas/user.v1.MapTestMessage.Status");
+        }
+
+        @Test
+        @DisplayName("Should convert map with message values to object schema")
+        void shouldConvertMapWithMessageValuesToObjectSchema() {
+            var schema = resolve(MapTestMessage.class);
+
+            var addressMapSchema = (Schema<?>) schema.getProperties().get("addressMap");
+            var additionalPropertiesSchema = (Schema<?>) addressMapSchema.getAdditionalProperties();
+            assertThat(additionalPropertiesSchema.get$ref())
+                    .isEqualTo("#/components/schemas/user.v1.MapTestMessage.Address");
+        }
+
+        @Test
+        @DisplayName("Should convert map with int values to object schema")
+        void showBeConvertMapWithIntValuesToObjectSchema() {
+            var schema = resolve(MapTestMessage.class);
+
+            var scoreMapSchema = (Schema<?>) schema.getProperties().get("scoreMap");
+            var additionalPropertiesSchema = (Schema<?>) scoreMapSchema.getAdditionalProperties();
+            assertThat(additionalPropertiesSchema.getType()).isEqualTo("integer");
+            assertThat(additionalPropertiesSchema.getFormat()).isEqualTo("int32");
+        }
+
+        @Test
+        @DisplayName("Should be deprecated when using [deprecated = true] in proto")
+        void shouldBeDeprecatedWhenUsingDeprecatedInProto() {
+            var schema = resolve(MapTestMessage.class);
+
+            var metadataSchema = (Schema<?>) schema.getProperties().get("metadata");
+            assertThat(metadataSchema.getDeprecated()).isNull();
+
+            var deprecatedMapSchema = (Schema<?>) schema.getProperties().get("deprecatedMap");
+            assertThat(deprecatedMapSchema.getDeprecated()).isTrue();
+        }
+    }
+
+    private static Schema<?> resolve(Class<?> clazz) {
+        return getModelConverterContext().resolve(new AnnotatedType(clazz));
+    }
+
+    private static ModelConverterContext getModelConverterContext() {
+
+        var objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new ProtobufSchemaModule());
+
+        var objectMapperProvider = mock(ObjectMapperProvider.class);
+        when(objectMapperProvider.jsonMapper()).thenReturn(objectMapper);
+
+        var modelConverters = ModelConverters.getInstance(true);
+        modelConverters.addConverter(new ModelResolver(objectMapperProvider.jsonMapper()));
+        modelConverters.addConverter(new ProtobufWellKnownTypeModelConverter(objectMapperProvider));
+
+        return new ModelConverterContextImpl(modelConverters.getConverters());
     }
 }
