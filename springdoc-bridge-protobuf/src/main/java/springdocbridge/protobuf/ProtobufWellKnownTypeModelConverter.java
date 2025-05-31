@@ -31,6 +31,8 @@ import io.swagger.v3.core.converter.ModelConverterContext;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.BooleanSchema;
 import io.swagger.v3.oas.models.media.IntegerSchema;
+import io.swagger.v3.oas.models.media.JsonSchema;
+import io.swagger.v3.oas.models.media.MapSchema;
 import io.swagger.v3.oas.models.media.NumberSchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
@@ -89,10 +91,10 @@ import org.springframework.util.StringUtils;
  * }</pre>
  *
  * @author Freeman
- * @since 0.1.0
  * @see ModelConverter
  * @see <a href="https://protobuf.dev/programming-guides/json/">Protobuf JSON Mapping</a>
  * @see SpringDocBridgeProtobufAutoConfiguration
+ * @since 0.1.0
  */
 public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
 
@@ -185,59 +187,86 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
             }
 
             String propertyName = field.getName();
-            var propertyValue = properties.get(propertyName);
-            if (propertyValue == null) {
+            var schema = properties.get(propertyName);
+            if (schema == null) {
                 propertyName = field.getJsonName();
-                propertyValue = properties.get(propertyName);
+                schema = properties.get(propertyName);
             }
-            if (propertyValue != null) {
-                // Handle repeated enum fields
-                if (field.isRepeated() && field.getType() == Descriptors.FieldDescriptor.Type.ENUM) {
-                    handleRepeatedEnumField(field, propertyValue, context);
-                }
 
-                // OpenAPI 3.x all fields are optional by default, so we need to add required fields manually
-                // see https://spec.openapis.org/oas/v3.0.0.html#schema
-                resolvedSchema.addRequiredItem(propertyName);
+            if (schema == null) {
+                continue;
             }
+
+            // Handle repeated enum fields
+            if (field.isRepeated() && field.getType() == Descriptors.FieldDescriptor.Type.ENUM) {
+                handleFieldForEnum(field, schema, context);
+            }
+
+            // Handle map fields with enum values
+            if (field.isMapField() && field.getType() == Descriptors.FieldDescriptor.Type.MESSAGE) {
+                // For map fields, we need to check the value type of the map entry
+                var mapEntryDescriptor = field.getMessageType();
+                if (mapEntryDescriptor.getFields().size() == 2) {
+                    var valueField = mapEntryDescriptor.getFields().get(1); // value field is always at index 1
+                    if (valueField.getType() == Descriptors.FieldDescriptor.Type.ENUM) {
+                        handleFieldForEnum(valueField, schema, context);
+                    }
+                }
+            }
+
+            // Handle deprecated fields - set deprecated flag in OpenAPI schema
+            if (field.getOptions().getDeprecated()) {
+                schema.setDeprecated(true);
+            }
+
+            // OpenAPI 3.x all fields are optional by default, so we need to add required fields manually
+            // see https://spec.openapis.org/oas/v3.0.0.html#schema
+            resolvedSchema.addRequiredItem(propertyName);
         }
     }
 
-    @SuppressWarnings({"rawtypes"})
-    private static void handleRepeatedEnumField(
-            Descriptors.FieldDescriptor field, Schema propertyValue, ModelConverterContext context) {
-        if (!(propertyValue instanceof ArraySchema)) {
-            return;
-        }
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static void handleFieldForEnum(
+            Descriptors.FieldDescriptor fieldDescriptor, Schema schema, ModelConverterContext context) {
 
-        ArraySchema arraySchema = (ArraySchema) propertyValue;
+        var enumDescriptor = fieldDescriptor.getEnumType();
 
-        // Get the enum descriptor and create the enum class name
-        Descriptors.EnumDescriptor enumDescriptor = field.getEnumType();
-        String enumClassName = getEnumClassName(enumDescriptor);
+        String enumSchemaName = getEnumClassName(enumDescriptor);
 
-        // Create enum schema with $ref
-        String enumSchemaName = enumClassName;
-
-        // Check if the enum schema is already defined
         if (!context.getDefinedModels().containsKey(enumSchemaName)) {
-            // Create the enum schema
             StringSchema enumSchema = new StringSchema();
 
-            // Get enum values from the descriptor
             List<String> enumValues = enumDescriptor.getValues().stream()
                     .map(Descriptors.EnumValueDescriptor::getName)
-                    .filter(name -> !name.equals("UNRECOGNIZED"))
                     .toList();
             enumSchema.setEnum(enumValues);
 
-            // Register the enum schema in the context
             context.defineModel(enumSchemaName, enumSchema);
         }
 
-        // Set the array items to reference the enum schema
         Schema<?> enumRefSchema = new Schema<>().$ref("#/components/schemas/" + enumSchemaName);
-        arraySchema.setItems(enumRefSchema);
+
+        if (schema instanceof ObjectSchema objectSchema) {
+            objectSchema.setAdditionalProperties(enumRefSchema);
+        } else if (schema instanceof MapSchema mapSchema) {
+            mapSchema.setAdditionalProperties(enumRefSchema);
+        } else if (schema instanceof JsonSchema jsonSchema) {
+            jsonSchema.setAdditionalProperties(enumRefSchema);
+        } else if (schema instanceof ArraySchema arraySchema) {
+            arraySchema.setItems(enumRefSchema);
+        } else {
+            var type = schema.getType();
+            if (type == null && schema.getTypes() != null && !schema.getTypes().isEmpty()) {
+                type = (String) schema.getTypes().iterator().next();
+            }
+            if (type != null) {
+                switch (type) {
+                    case "object" -> schema.setAdditionalProperties(enumRefSchema);
+                    case "array" -> schema.setItems(enumRefSchema);
+                    default -> {}
+                }
+            }
+        }
     }
 
     private static String getEnumClassName(Descriptors.EnumDescriptor enumDescriptor) {
@@ -248,7 +277,7 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
         }
 
         // Handle nested enums
-        String className = "";
+        String className;
         Descriptors.Descriptor containingType = enumDescriptor.getContainingType();
         if (containingType != null) {
             className = containingType.getName() + "." + enumDescriptor.getName();

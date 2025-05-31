@@ -33,6 +33,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springdoc.core.providers.ObjectMapperProvider;
+import user.v1.MapTestMessage;
 import user.v1.User;
 
 @DisplayName("ProtobufWellKnownTypeModelConverter Tests")
@@ -235,6 +236,67 @@ class ProtobufWellKnownTypeModelConverterTest {
             var arraySchema = (ArraySchema) phoneNumbersSchema;
             assertThat(arraySchema.getItems().get$ref()).isNotNull();
             assertThat(arraySchema.getItems().getProperties()).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("Protobuf map fields tests")
+    class ProtobufMapFieldsTests {
+
+        @Test
+        @DisplayName("Should convert map with string values to object schema")
+        void shouldConvertMapWithStringValuesToObjectSchema() {
+            var schema = resolve(MapTestMessage.class);
+
+            var metadataSchema = (Schema<?>) schema.getProperties().get("metadata");
+            assertThat(metadataSchema.getAdditionalProperties()).isInstanceOf(Schema.class);
+            var additionalPropertiesSchema = (Schema<?>) metadataSchema.getAdditionalProperties();
+            assertThat(additionalPropertiesSchema.getType()).isEqualTo("string");
+        }
+
+        @Test
+        @DisplayName("Should convert map with enum values to object schema")
+        void shouldConvertMapWithEnumValuesToObjectSchema() {
+            var schema = resolve(MapTestMessage.class);
+
+            var statusMapSchema = (Schema<?>) schema.getProperties().get("statusMap");
+            var additionalPropertiesSchema = (Schema<?>) statusMapSchema.getAdditionalProperties();
+            assertThat(additionalPropertiesSchema.get$ref())
+                    .isEqualTo("#/components/schemas/user.v1.MapTestMessage.Status");
+        }
+
+        @Test
+        @DisplayName("Should convert map with message values to object schema")
+        void shouldConvertMapWithMessageValuesToObjectSchema() {
+            var schema = resolve(MapTestMessage.class);
+
+            var addressMapSchema = (Schema<?>) schema.getProperties().get("addressMap");
+            var additionalPropertiesSchema = (Schema<?>) addressMapSchema.getAdditionalProperties();
+            assertThat(additionalPropertiesSchema.get$ref())
+                    .isEqualTo("#/components/schemas/user.v1.MapTestMessage.Address");
+        }
+
+        @Test
+        @DisplayName("Should convert map with int values to object schema")
+        void showBeConvertMapWithIntValuesToObjectSchema() {
+            var schema = resolve(MapTestMessage.class);
+
+            var scoreMapSchema = (Schema<?>) schema.getProperties().get("scoreMap");
+            var additionalPropertiesSchema = (Schema<?>) scoreMapSchema.getAdditionalProperties();
+            assertThat(additionalPropertiesSchema.getType()).isEqualTo("integer");
+            assertThat(additionalPropertiesSchema.getFormat()).isEqualTo("int32");
+        }
+
+        @Test
+        @DisplayName("Should be deprecated when using [deprecated = true] in proto")
+        void shouldBeDeprecatedWhenUsingDeprecatedInProto() {
+            var schema = resolve(MapTestMessage.class);
+
+            var metadataSchema = (Schema<?>) schema.getProperties().get("metadata");
+            assertThat(metadataSchema.getDeprecated()).isNull();
+
+            var deprecatedMapSchema = (Schema<?>) schema.getProperties().get("deprecatedMap");
+            assertThat(deprecatedMapSchema.getDeprecated()).isTrue();
         }
     }
 
