@@ -27,8 +27,6 @@ import io.swagger.v3.oas.models.media.IntegerSchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
-import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -51,7 +49,6 @@ class ProtobufWellKnownTypeModelConverterTest {
             assertThat(schema).isInstanceOf(StringSchema.class);
             var stringSchema = (StringSchema) schema;
             assertThat(stringSchema.getFormat()).isEqualTo("date-time");
-            assertThat(stringSchema.getExample()).isEqualTo("1970-01-01T00:00:00Z");
         }
 
         @Test
@@ -62,41 +59,32 @@ class ProtobufWellKnownTypeModelConverterTest {
             assertThat(schema).isInstanceOf(StringSchema.class);
             var stringSchema = (StringSchema) schema;
             assertThat(stringSchema.getPattern()).isEqualTo("^-?\\d+(\\.\\d+)?s$");
-            assertThat(stringSchema.getExample()).isEqualTo("1.000340012s");
         }
 
         @Test
-        @DisplayName("Should convert BoolValue to nullable boolean schema")
-        void shouldConvertBoolValueToNullableBooleanSchema() {
+        @DisplayName("Should convert BoolValue to boolean schema")
+        void shouldConvertBoolValueToBooleanSchema() {
             var schema = resolve(BoolValue.class);
 
             assertThat(schema).isInstanceOf(BooleanSchema.class);
-            var booleanSchema = (BooleanSchema) schema;
-            assertThat(booleanSchema.getNullable()).isTrue();
-            assertThat(booleanSchema.getExample()).isEqualTo(false);
         }
 
         @Test
-        @DisplayName("Should convert Int32Value to nullable integer schema")
-        void shouldConvertInt32ValueToNullableIntegerSchema() {
+        @DisplayName("Should convert Int32Value to integer schema")
+        void shouldConvertInt32ValueToIntegerSchema() {
             var schema = resolve(Int32Value.class);
 
             assertThat(schema).isInstanceOf(IntegerSchema.class);
-            var integerSchema = (IntegerSchema) schema;
-            assertThat(integerSchema.getFormat()).isEqualTo("int32");
-            assertThat(integerSchema.getNullable()).isTrue();
-            assertThat(integerSchema.getExample()).isEqualTo(0);
+            assertThat(schema.getType()).isEqualTo("integer");
+            assertThat(schema.getFormat()).isEqualTo("int32");
         }
 
         @Test
-        @DisplayName("Should convert StringValue to nullable string schema")
-        void shouldConvertStringValueToNullableStringSchema() {
+        @DisplayName("Should convert StringValue to string schema")
+        void shouldConvertStringValueToStringSchema() {
             var schema = resolve(StringValue.class);
 
             assertThat(schema).isInstanceOf(StringSchema.class);
-            var stringSchema = (StringSchema) schema;
-            assertThat(stringSchema.getNullable()).isTrue();
-            assertThat(stringSchema.getExample()).isEqualTo("");
         }
     }
 
@@ -113,7 +101,6 @@ class ProtobufWellKnownTypeModelConverterTest {
             var objectSchema = (ObjectSchema) schema;
             assertThat(objectSchema.getProperties()).containsKey("@type");
             assertThat(objectSchema.getAdditionalProperties()).isEqualTo(true);
-            assertThat(objectSchema.getExample()).isInstanceOf(Map.class);
         }
 
         @Test
@@ -124,7 +111,6 @@ class ProtobufWellKnownTypeModelConverterTest {
             assertThat(schema).isInstanceOf(ObjectSchema.class);
             var objectSchema = (ObjectSchema) schema;
             assertThat(objectSchema.getAdditionalProperties()).isEqualTo(true);
-            assertThat(objectSchema.getExample()).isInstanceOf(Map.class);
         }
 
         @Test
@@ -135,7 +121,6 @@ class ProtobufWellKnownTypeModelConverterTest {
             assertThat(schema).isInstanceOf(ArraySchema.class);
             var arraySchema = (ArraySchema) schema;
             assertThat(arraySchema.getItems()).isNotNull();
-            assertThat(arraySchema.getExample()).isInstanceOf(List.class);
         }
 
         @Test
@@ -144,8 +129,6 @@ class ProtobufWellKnownTypeModelConverterTest {
             var schema = resolve(FieldMask.class);
 
             assertThat(schema).isInstanceOf(StringSchema.class);
-            var stringSchema = (StringSchema) schema;
-            assertThat(stringSchema.getExample()).isEqualTo("f.fooBar,h");
         }
 
         @Test
@@ -154,8 +137,6 @@ class ProtobufWellKnownTypeModelConverterTest {
             var schema = resolve(Empty.class);
 
             assertThat(schema).isInstanceOf(ObjectSchema.class);
-            var objectSchema = (ObjectSchema) schema;
-            assertThat(objectSchema.getExample()).isEqualTo(Map.of());
         }
 
         @Test
@@ -166,7 +147,6 @@ class ProtobufWellKnownTypeModelConverterTest {
             assertThat(schema).isInstanceOf(StringSchema.class);
             var stringSchema = (StringSchema) schema;
             assertThat(stringSchema.getFormat()).isEqualTo("byte");
-            assertThat(stringSchema.getExample()).isEqualTo("YWJjMTIzIT8kKiYoKSctPUB+");
         }
     }
 

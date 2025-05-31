@@ -300,9 +300,9 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
 
         // Wrapper types: same as wrapped primitive type, but nullable
         map.put(BoolValue.class, new BooleanSchema());
-        map.put(Int32Value.class, new IntegerSchema());
+        map.put(Int32Value.class, new IntegerSchema().format("int32"));
+        map.put(UInt32Value.class, new IntegerSchema().format("int32").minimum(BigDecimal.ONE));
         map.put(Int64Value.class, new IntegerSchema().format("int64"));
-        map.put(UInt32Value.class, new IntegerSchema().minimum(BigDecimal.ONE));
         map.put(UInt64Value.class, new IntegerSchema().format("int64").minimum(BigDecimal.ONE));
         map.put(FloatValue.class, new NumberSchema().format("float"));
         map.put(DoubleValue.class, new NumberSchema().format("double"));
@@ -331,7 +331,7 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
         map.put(NullValue.class, new Schema<>());
 
         // FieldMask: string
-        map.put(FieldMask.class, new Schema<>()); // TODO(Freeman): StringSchema?
+        map.put(FieldMask.class, new StringSchema());
 
         // Empty: empty object
         map.put(Empty.class, new ObjectSchema());

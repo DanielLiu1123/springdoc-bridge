@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package user.v1;
 
-import "user/v1/user.proto";
-
 option java_multiple_files = true;
 option java_package = "user.v1";
 
