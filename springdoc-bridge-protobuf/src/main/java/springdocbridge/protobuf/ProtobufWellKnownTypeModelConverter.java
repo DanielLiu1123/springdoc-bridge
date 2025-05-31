@@ -14,6 +14,7 @@ import com.google.protobuf.FloatValue;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.Int64Value;
 import com.google.protobuf.ListValue;
+import com.google.protobuf.MapField;
 import com.google.protobuf.Message;
 import com.google.protobuf.NullValue;
 import com.google.protobuf.ProtocolMessageEnum;
@@ -123,6 +124,11 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
         // Handle protobuf enums
         if (ProtocolMessageEnum.class.isAssignableFrom(cls) && cls.isEnum()) {
             return createProtobufEnumSchema(cls);
+        }
+
+        // Handle protobuf MapField - convert to simple object with additionalProperties
+        if (MapField.class.isAssignableFrom(cls)) {
+            return createMapFieldSchema(javaType);
         }
 
         // Parse protobuf message
@@ -385,6 +391,44 @@ public class ProtobufWellKnownTypeModelConverter implements ModelConverter {
                         .filter(s -> !Objects.equals(s, "UNRECOGNIZED"))
                         .toList();
                 schema.setEnum(enumValues);
+            }
+        }
+
+        return schema;
+    }
+
+    /**
+     * Creates a simplified schema for protobuf MapField types.
+     * Instead of exposing the internal MapField structure, this generates
+     * a clean object schema with additionalProperties.
+     */
+    private static Schema<?> createMapFieldSchema(JavaType javaType) {
+        ObjectSchema schema = new ObjectSchema();
+        schema.setAdditionalProperties(true);
+
+        // Try to determine the value type from the MapField generic parameters
+        if (javaType.containedTypeCount() >= 2) {
+            JavaType valueType = javaType.containedType(1);
+            if (valueType != null) {
+                Class<?> valueClass = valueType.getRawClass();
+
+                // Set additionalProperties to the appropriate schema based on value type
+                if (String.class.equals(valueClass)) {
+                    schema.setAdditionalProperties(new StringSchema());
+                } else if (Integer.class.equals(valueClass) || int.class.equals(valueClass)) {
+                    schema.setAdditionalProperties(new IntegerSchema().format("int32"));
+                } else if (Long.class.equals(valueClass) || long.class.equals(valueClass)) {
+                    schema.setAdditionalProperties(new IntegerSchema().format("int64"));
+                } else if (Boolean.class.equals(valueClass) || boolean.class.equals(valueClass)) {
+                    schema.setAdditionalProperties(new BooleanSchema());
+                } else if (Double.class.equals(valueClass) || double.class.equals(valueClass)) {
+                    schema.setAdditionalProperties(new NumberSchema().format("double"));
+                } else if (Float.class.equals(valueClass) || float.class.equals(valueClass)) {
+                    schema.setAdditionalProperties(new NumberSchema().format("float"));
+                } else {
+                    // For complex types, just use true to allow any value
+                    schema.setAdditionalProperties(true);
+                }
             }
         }
 
