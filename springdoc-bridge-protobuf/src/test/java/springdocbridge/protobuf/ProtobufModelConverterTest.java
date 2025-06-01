@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.example.schema.naming.v1.SchemaNamingTestMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Any;
 import com.google.protobuf.BoolValue;
@@ -328,12 +329,60 @@ class ProtobufModelConverterTest {
         }
     }
 
+    @Nested
+    @DisplayName("Schema Naming Strategy Tests")
+    class SchemaNamingStrategyTests {
+
+        @Test
+        @DisplayName("Should use simple name when using Springdoc naming strategy and not using FQN")
+        void shouldUseSimpleNameWhenUsingSpringdocNamingStrategyAndNotUsingFqn() {
+            // Arrange
+            var context = getModelConverterContext(SchemaNamingStrategy.SPRINGDOC, false);
+
+            // Act
+            context.resolve(new AnnotatedType(SchemaNamingTestMessage.class));
+
+            // Then
+            assertThat(context.getDefinedModels()).containsKey("SchemaNamingTestMessage");
+        }
+
+        @Test
+        @DisplayName("Should use FQN when using Springdoc naming strategy and using FQN")
+        void shouldUseFqnWhenUsingSpringdocNamingStrategyAndUsingFqn() {
+            // Arrange
+            var context = getModelConverterContext(SchemaNamingStrategy.SPRINGDOC, true);
+
+            // Act
+            context.resolve(new AnnotatedType(SchemaNamingTestMessage.class));
+
+            // Then
+            assertThat(context.getDefinedModels()).containsKey("com.example.schema.naming.v1.SchemaNamingTestMessage");
+        }
+
+        @Test
+        @DisplayName("Should use protobuf name when using Protobuf naming strategy")
+        void shouldUseProtobufNameWhenUsingProtobufNamingStrategy() {
+            // Arrange
+            var context = getModelConverterContext(SchemaNamingStrategy.PROTOBUF, true);
+
+            // Act
+            context.resolve(new AnnotatedType(SchemaNamingTestMessage.class));
+
+            // Assert
+            assertThat(context.getDefinedModels()).containsKey("schema_naming.v1.SchemaNamingTestMessage");
+        }
+    }
+
     private static Schema<?> resolve(Type type) {
         return resolveAnnotatedType(new AnnotatedType(type));
     }
 
     private static Schema<?> resolveAnnotatedType(AnnotatedType annotatedType) {
         var context = getModelConverterContext();
+        return resolveAnnotatedType(context, annotatedType);
+    }
+
+    private static Schema<?> resolveAnnotatedType(ModelConverterContext context, AnnotatedType annotatedType) {
         var schema = context.resolve(annotatedType);
         if (schema == null) {
             return null;
@@ -346,6 +395,11 @@ class ProtobufModelConverterTest {
     }
 
     private static ModelConverterContext getModelConverterContext() {
+        return getModelConverterContext(SchemaNamingStrategy.SPRINGDOC, true);
+    }
+
+    private static ModelConverterContext getModelConverterContext(
+            SchemaNamingStrategy schemaNamingStrategy, boolean useFqn) {
 
         var objectMapper = new ObjectMapper();
 
@@ -354,7 +408,7 @@ class ProtobufModelConverterTest {
 
         var modelConverters = ModelConverters.getInstance(true);
         modelConverters.addConverter(new ProtobufModelConverter(
-                objectMapperProvider, new ProtobufNameResolver(SchemaNamingStrategy.SPRINGDOC, true)));
+                objectMapperProvider, new ProtobufNameResolver(schemaNamingStrategy, useFqn)));
 
         return new ModelConverterContextImpl(modelConverters.getConverters());
     }
