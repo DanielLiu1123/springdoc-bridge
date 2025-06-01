@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package types.v1;
+
+option java_multiple_files = true;
+
+message EnumTestMessage {
+
+  enum Enum {
+    ENUM_UNSPECIFIED = 0;
+    VALUE_1 = 1;
+  }
+}

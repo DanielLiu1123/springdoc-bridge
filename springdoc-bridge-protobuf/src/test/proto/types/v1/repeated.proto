@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package types.v1;
+
+option java_multiple_files = true;
+
+message RepeatedTestMessage {
+
+  repeated string repeated_string = 1;
+  repeated int32 repeated_int = 2;
+  repeated Enum repeated_enum = 3;
+  repeated Message repeated_message = 4;
+
+  message Message {
+  }
+
+  enum Enum {
+    ENUM_UNSPECIFIED = 0;
+  }
+}

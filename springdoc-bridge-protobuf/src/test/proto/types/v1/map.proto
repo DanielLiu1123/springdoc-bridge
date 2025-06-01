@@ -4,25 +4,12 @@ package types.v1;
 
 option java_multiple_files = true;
 
-// Test message for map field handling
 message MapTestMessage {
-
-  // Map with string values (basic type)
   map<string, string> metadata = 1;
-  
-  // Map with enum values
   map<string, Status> status_map = 2;
-  
-  // Map with message values
   map<string, Address> address_map = 3;
-  
-  // Map with integer values
   map<string, int32> score_map = 4;
-  
-  // Map with boolean values
   map<string, bool> feature_flags = 5;
-
-  // Deprecated map field for testing deprecated functionality
   map<string, string> deprecated_map = 6 [deprecated = true];
 
   enum Status {

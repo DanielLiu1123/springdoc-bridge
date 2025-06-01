@@ -38,9 +38,11 @@ import org.springdoc.core.providers.ObjectMapperProvider;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.ResolvableType;
 import springdocbridge.protobuf.SpringDocBridgeProtobufProperties.SchemaNamingStrategy;
+import types.v1.DeprecatedTestMessage;
+import types.v1.EnumTestMessage;
 import types.v1.MapTestMessage;
 import types.v1.OptionalTestMessage;
-import user.v1.User;
+import types.v1.RepeatedTestMessage;
 
 @DisplayName("ProtobufWellKnownTypeModelConverter Tests")
 class ProtobufModelConverterTest {
@@ -166,12 +168,12 @@ class ProtobufModelConverterTest {
         @DisplayName("Should remove UNRECOGNIZED from enum values")
         void shouldRemoveUnrecognizedFromEnumValues() {
             // Given
-            var schema = resolve(User.Status.class);
+            var schema = resolve(EnumTestMessage.Enum.class);
 
             // Then
             assertThat(schema).isInstanceOf(StringSchema.class);
             var stringSchema = (StringSchema) schema;
-            assertThat(stringSchema.getEnum()).doesNotContain("UNRECOGNIZED");
+            assertThat(stringSchema.getEnum()).containsExactly("ENUM_UNSPECIFIED", "VALUE_1");
         }
     }
 
@@ -182,50 +184,21 @@ class ProtobufModelConverterTest {
         @Test
         @DisplayName("Should convert repeated string field to array schema")
         void shouldConvertRepeatedStringFieldToArraySchema() {
-            var schema = resolve(User.class);
+            var schema = resolve(RepeatedTestMessage.class);
 
-            var tagsSchema = schema.getProperties().get("tags");
-            assertThat(tagsSchema).isInstanceOf(ArraySchema.class);
-            var arraySchema = (ArraySchema) tagsSchema;
-            assertThat(arraySchema.getItems()).isInstanceOf(StringSchema.class);
-            assertThat(arraySchema.getProperties()).isNull();
-        }
+            var repeatedStringSchema = (ArraySchema) schema.getProperties().get("repeatedString");
+            assertThat(repeatedStringSchema.getItems().getTypes()).containsExactly("string");
 
-        @Test
-        @DisplayName("Should convert repeated int field to array schema")
-        void shouldConvertRepeatedIntFieldToArraySchema() {
-            var schema = resolve(User.class);
+            var repeatedIntSchema = (ArraySchema) schema.getProperties().get("repeatedInt");
+            assertThat(repeatedIntSchema.getItems().getTypes()).containsExactly("integer");
 
-            var ageSchema = schema.getProperties().get("tagIds");
-            assertThat(ageSchema).isInstanceOf(ArraySchema.class);
-            var arraySchema = (ArraySchema) ageSchema;
-            assertThat(arraySchema.getItems()).isInstanceOf(JsonSchema.class);
-            assertThat(arraySchema.getProperties()).isNull();
-            assertThat(arraySchema.getItems().getTypes()).containsExactly("integer");
-        }
+            var repeatedMessageSchema = (ArraySchema) schema.getProperties().get("repeatedMessage");
+            assertThat(repeatedMessageSchema.getItems().get$ref())
+                    .isEqualTo("#/components/schemas/types.v1.RepeatedTestMessage.Message");
 
-        @Test
-        @DisplayName("Should convert repeated enum field to array schema")
-        void shouldConvertRepeatedEnumFieldToArraySchema() {
-            var schema = resolve(User.class);
-
-            var statusHistorySchema = schema.getProperties().get("statusHistory");
-            assertThat(statusHistorySchema).isInstanceOf(ArraySchema.class);
-            var arraySchema = (ArraySchema) statusHistorySchema;
-            assertThat(arraySchema.getItems().get$ref()).isEqualTo("#/components/schemas/user.v1.User.Status");
-            assertThat(arraySchema.getProperties()).isNull();
-        }
-
-        @Test
-        @DisplayName("Should convert repeated message field to array schema")
-        void shouldConvertRepeatedMessageFieldToArraySchema() {
-            var schema = resolve(User.class);
-
-            var phoneNumbersSchema = schema.getProperties().get("phoneNumbers");
-            assertThat(phoneNumbersSchema).isInstanceOf(ArraySchema.class);
-            var arraySchema = (ArraySchema) phoneNumbersSchema;
-            assertThat(arraySchema.getItems().get$ref()).isNotNull();
-            assertThat(arraySchema.getItems().getProperties()).isNull();
+            var repeatedEnumSchema = (ArraySchema) schema.getProperties().get("repeatedEnum");
+            assertThat(repeatedEnumSchema.getItems().get$ref())
+                    .isEqualTo("#/components/schemas/types.v1.RepeatedTestMessage.Enum");
         }
     }
 
@@ -238,6 +211,25 @@ class ProtobufModelConverterTest {
             var schema = resolve(OptionalTestMessage.class);
 
             assertThat(schema.getRequired()).containsExactlyInAnyOrder("requiredString", "requiredMessage");
+        }
+    }
+
+    @Nested
+    @DisplayName("Deprecated fields tests")
+    class DeprecatedFieldsTests {
+        @Test
+        @DisplayName("Should mark deprecated fields")
+        void shouldMarkDeprecatedFields() {
+            // Given
+            @SuppressWarnings("deprecation")
+            var schema = resolve(DeprecatedTestMessage.class);
+
+            // Then
+            assertThat(schema.getDeprecated()).isTrue();
+            assertThat(schema.getProperties().get("deprecatedString").getDeprecated())
+                    .isTrue();
+            assertThat(schema.getProperties().get("notDeprecatedString").getDeprecated())
+                    .isNull();
         }
     }
 
@@ -264,7 +256,7 @@ class ProtobufModelConverterTest {
             var statusMapSchema = (Schema<?>) schema.getProperties().get("statusMap");
             var additionalPropertiesSchema = (Schema<?>) statusMapSchema.getAdditionalProperties();
             assertThat(additionalPropertiesSchema.get$ref())
-                    .isEqualTo("#/components/schemas/user.v1.MapTestMessage.Status");
+                    .isEqualTo("#/components/schemas/types.v1.MapTestMessage.Status");
         }
 
         @Test
@@ -275,7 +267,7 @@ class ProtobufModelConverterTest {
             var addressMapSchema = (Schema<?>) schema.getProperties().get("addressMap");
             var additionalPropertiesSchema = (Schema<?>) addressMapSchema.getAdditionalProperties();
             assertThat(additionalPropertiesSchema.get$ref())
-                    .isEqualTo("#/components/schemas/user.v1.MapTestMessage.Address");
+                    .isEqualTo("#/components/schemas/types.v1.MapTestMessage.Address");
         }
 
         @Test
@@ -303,8 +295,8 @@ class ProtobufModelConverterTest {
     }
 
     @Nested
-    @DisplayName("Protobuf List Fields Tests")
-    class ListFieldsTests {
+    @DisplayName("Resolve List tests")
+    class ResolveListTests {
 
         @Test
         @DisplayName("Return null when resolve List without schemaProperty")

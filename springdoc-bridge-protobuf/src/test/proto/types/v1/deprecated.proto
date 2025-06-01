@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package types.v1;
+
+option java_multiple_files = true;
+
+message DeprecatedTestMessage {
+
+  option deprecated = true;
+
+  string deprecated_string = 1 [deprecated = true];
+  string not_deprecated_string = 2;
+
+}
