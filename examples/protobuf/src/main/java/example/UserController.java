@@ -1,6 +1,7 @@
 package example;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -206,7 +207,20 @@ public class UserController {
      */
     @Builder(toBuilder = true)
     public record UserWrapper(
-            String wrapperName, User user, LocalDateTime createdAt, boolean isActive, String description) {}
+            String wrapperName,
+            User user,
+            LocalDateTime createdAt,
+            boolean isActive,
+            String description,
+            UserWrapperStatus status) {
+
+        @Schema(enumAsRef = true)
+        public enum UserWrapperStatus {
+            ACTIVE,
+            INACTIVE,
+            SUSPENDED
+        }
+    }
 
     /**
      * Java POJO containing protobuf PhoneNumber nested message

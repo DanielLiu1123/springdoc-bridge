@@ -20,17 +20,22 @@ import io.swagger.v3.core.converter.AnnotatedType;
 import io.swagger.v3.core.converter.ModelConverterContext;
 import io.swagger.v3.core.converter.ModelConverterContextImpl;
 import io.swagger.v3.core.converter.ModelConverters;
-import io.swagger.v3.core.jackson.ModelResolver;
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.BooleanSchema;
 import io.swagger.v3.oas.models.media.IntegerSchema;
+import io.swagger.v3.oas.models.media.JsonSchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
+import java.lang.reflect.Type;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springdoc.core.providers.ObjectMapperProvider;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.ResolvableType;
 import springdocbridge.protobuf.SpringDocBridgeProtobufProperties.SchemaNamingStrategy;
 import user.v1.MapTestMessage;
 import user.v1.User;
@@ -156,14 +161,15 @@ class ProtobufModelConverterTest {
     class ProtobufEnumSchemaTests {
 
         @Test
-        @DisplayName("Should convert protobuf enum to $ref schema")
-        void shouldConvertProtobufEnumToRefSchema() {
+        @DisplayName("Should remove UNRECOGNIZED from enum values")
+        void shouldRemoveUnrecognizedFromEnumValues() {
             // Given
             var schema = resolve(User.Status.class);
 
             // Then
-            assertThat(schema).isNotNull();
-            assertThat(schema.get$ref()).isEqualTo("#/components/schemas/user.v1.User.Status");
+            assertThat(schema).isInstanceOf(StringSchema.class);
+            var stringSchema = (StringSchema) schema;
+            assertThat(stringSchema.getEnum()).doesNotContain("UNRECOGNIZED");
         }
     }
 
@@ -191,8 +197,9 @@ class ProtobufModelConverterTest {
             var ageSchema = schema.getProperties().get("tagIds");
             assertThat(ageSchema).isInstanceOf(ArraySchema.class);
             var arraySchema = (ArraySchema) ageSchema;
-            assertThat(arraySchema.getItems()).isInstanceOf(IntegerSchema.class);
+            assertThat(arraySchema.getItems()).isInstanceOf(JsonSchema.class);
             assertThat(arraySchema.getProperties()).isNull();
+            assertThat(arraySchema.getItems().getTypes()).containsExactly("integer");
         }
 
         @Test
@@ -232,7 +239,7 @@ class ProtobufModelConverterTest {
             var metadataSchema = (Schema<?>) schema.getProperties().get("metadata");
             assertThat(metadataSchema.getAdditionalProperties()).isInstanceOf(Schema.class);
             var additionalPropertiesSchema = (Schema<?>) metadataSchema.getAdditionalProperties();
-            assertThat(additionalPropertiesSchema.getType()).isEqualTo("string");
+            assertThat(additionalPropertiesSchema.getTypes()).containsExactly("string");
         }
 
         @Test
@@ -264,7 +271,7 @@ class ProtobufModelConverterTest {
 
             var scoreMapSchema = (Schema<?>) schema.getProperties().get("scoreMap");
             var additionalPropertiesSchema = (Schema<?>) scoreMapSchema.getAdditionalProperties();
-            assertThat(additionalPropertiesSchema.getType()).isEqualTo("integer");
+            assertThat(additionalPropertiesSchema.getTypes()).containsExactly("integer");
             assertThat(additionalPropertiesSchema.getFormat()).isEqualTo("int32");
         }
 
@@ -281,8 +288,61 @@ class ProtobufModelConverterTest {
         }
     }
 
-    private static Schema<?> resolve(Class<?> clazz) {
-        return getModelConverterContext().resolve(new AnnotatedType(clazz));
+    @Nested
+    @DisplayName("Protobuf List Fields Tests")
+    class ListFieldsTests {
+
+        @Test
+        @DisplayName("Return null when resolve List without schemaProperty")
+        void nullWhenResolveListWithoutSchemaProperty() {
+
+            // This is why we need to set schemaProperty to true
+            // see springdocbridge.protobuf.ProtobufModelConverter.createSchemaForMessage
+
+            // Given
+            var type = ResolvableType.forType(new ParameterizedTypeReference<List<String>>() {})
+                    .getType();
+
+            // When
+            var schema = resolveAnnotatedType(new AnnotatedType(type));
+
+            // Then
+            assertThat(schema).isNull();
+        }
+
+        @Test
+        @DisplayName("Should resolve List when set schemaProperty to true")
+        void shouldResolveListWhenSetSchemaPropertyToTrue() {
+            // Given
+            var type = ResolvableType.forType(new ParameterizedTypeReference<List<String>>() {})
+                    .getType();
+
+            // When
+            var schema = resolveAnnotatedType(new AnnotatedType(type).schemaProperty(true));
+
+            // Then
+            assertThat(schema).isInstanceOf(ArraySchema.class);
+            var arraySchema = (ArraySchema) schema;
+            assertThat(arraySchema.getItems()).isInstanceOf(JsonSchema.class);
+            assertThat(arraySchema.getItems().getTypes()).containsExactly("string");
+        }
+    }
+
+    private static Schema<?> resolve(Type type) {
+        return resolveAnnotatedType(new AnnotatedType(type));
+    }
+
+    private static Schema<?> resolveAnnotatedType(AnnotatedType annotatedType) {
+        var context = getModelConverterContext();
+        var schema = context.resolve(annotatedType);
+        if (schema == null) {
+            return null;
+        }
+        if (schema.get$ref() != null) {
+            var schemaName = schema.get$ref().substring(Components.COMPONENTS_SCHEMAS_REF.length());
+            return context.getDefinedModels().get(schemaName);
+        }
+        return schema;
     }
 
     private static ModelConverterContext getModelConverterContext() {
@@ -293,9 +353,8 @@ class ProtobufModelConverterTest {
         when(objectMapperProvider.jsonMapper()).thenReturn(objectMapper);
 
         var modelConverters = ModelConverters.getInstance(true);
-        modelConverters.addConverter(new ModelResolver(objectMapperProvider.jsonMapper()));
         modelConverters.addConverter(new ProtobufModelConverter(
-                objectMapperProvider, new ProtobufNameResolver(SchemaNamingStrategy.PROTOBUF, true)));
+                objectMapperProvider, new ProtobufNameResolver(SchemaNamingStrategy.SPRINGDOC, true)));
 
         return new ModelConverterContextImpl(modelConverters.getConverters());
     }

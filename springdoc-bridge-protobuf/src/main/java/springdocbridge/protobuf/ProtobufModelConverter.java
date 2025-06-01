@@ -15,6 +15,7 @@ import com.google.protobuf.Int32Value;
 import com.google.protobuf.Int64Value;
 import com.google.protobuf.ListValue;
 import com.google.protobuf.NullValue;
+import com.google.protobuf.ProtocolStringList;
 import com.google.protobuf.StringValue;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Timestamp;
@@ -24,6 +25,7 @@ import com.google.protobuf.Value;
 import io.swagger.v3.core.converter.AnnotatedType;
 import io.swagger.v3.core.converter.ModelConverter;
 import io.swagger.v3.core.converter.ModelConverterContext;
+import io.swagger.v3.core.util.RefUtils;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.BooleanSchema;
 import io.swagger.v3.oas.models.media.IntegerSchema;
@@ -41,7 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.springdoc.core.providers.ObjectMapperProvider;
-import org.springframework.core.ResolvableType;
+import org.springframework.beans.BeanUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -67,7 +69,6 @@ import org.springframework.util.StringUtils;
  *         // {
  *         //   "type": "string",
  *         //   "format": "date-time",
- *         //   "example": "1970-01-01T00:00:00Z"
  *         // }
  *         return Timestamps.now();
  *     }
@@ -123,31 +124,37 @@ public class ProtobufModelConverter implements ModelConverter {
     }
 
     private Schema<?> createSchemaForMessage(Class<?> cls, ModelConverterContext context) {
+
         var descriptor = ProtobufNameResolver.getDescriptor(cls);
         if (descriptor == null) {
             throw new IllegalStateException("No descriptor found for class " + cls);
         }
 
         var schemaName = protobufNameResolver.getNameOfClass(cls);
-        var ref = "#/components/schemas/" + schemaName;
+        var ref = RefUtils.constructRef(schemaName);
         if (context.getDefinedModels().containsKey(schemaName)) {
             return new Schema<>().$ref(ref);
         }
 
         var schema = new ObjectSchema();
 
+        if (descriptor.getOptions().getDeprecated()) {
+            schema.setDeprecated(true);
+        }
+
         for (var field : descriptor.getFields()) {
             var fieldType = getGetterReturnType(cls, field);
-            var fieldSchema = context.resolve(new AnnotatedType(fieldType));
 
-            schema.addProperty(field.getName(), fieldSchema);
+            var fieldSchema = context.resolve(
+                    new AnnotatedType(fieldType).schemaProperty(true).resolveAsRef(true));
+            if (field.getOptions().getDeprecated()) {
+                fieldSchema = newSchema(fieldSchema).deprecated(true);
+            }
+
+            schema.addProperty(underlineToCamel(field.getName()), fieldSchema);
 
             if (!field.toProto().getProto3Optional()) {
                 schema.addRequiredItem(field.getName());
-            }
-
-            if (field.getOptions().getDeprecated()) {
-                fieldSchema.setDeprecated(true);
             }
         }
 
@@ -156,6 +163,12 @@ public class ProtobufModelConverter implements ModelConverter {
 
         // Return a $ref to the registered schema
         return new Schema<>().$ref(ref);
+    }
+
+    private static Schema<?> newSchema(Schema<?> fieldSchema) {
+        var newSchema = new Schema<>();
+        BeanUtils.copyProperties(fieldSchema, newSchema);
+        return newSchema;
     }
 
     /**
@@ -173,13 +186,7 @@ public class ProtobufModelConverter implements ModelConverter {
         for (String methodName : possibleMethodNames) {
             try {
                 Method method = clazz.getMethod(methodName);
-                var type = method.getGenericReturnType();
-                if (type instanceof Class<?> clz) {
-                    if (List.class.isAssignableFrom(clz)) { // repeated string returns ProtocolStringList
-                        return ResolvableType.forType(type).as(List.class).getType();
-                    }
-                }
-                return type;
+                return method.getGenericReturnType();
             } catch (NoSuchMethodException e) {
                 // no-op
             }
@@ -251,6 +258,9 @@ public class ProtobufModelConverter implements ModelConverter {
         // ByteString: base64 string
         map.put(ByteString.class, new StringSchema().format("byte"));
 
+        // ProtocolStringList: repeated string
+        map.put(ProtocolStringList.class, new ArraySchema().items(new StringSchema()));
+
         return Map.copyOf(map);
     }
 
@@ -263,32 +273,38 @@ public class ProtobufModelConverter implements ModelConverter {
      * @see <a href="https://github.com/DanielLiu1123/springdoc-bridge/issues/5">Reuse enum</a>
      */
     private Schema<?> createSchemaForEnum(Class<?> protobufEnumClass, ModelConverterContext context) {
-        // Generate a unique schema name for the enum based on naming strategy
-        String enumSchemaName = protobufNameResolver.getNameOfClass(protobufEnumClass);
 
+        var enumDescriptor = ProtobufNameResolver.getEnumDescriptor(protobufEnumClass);
+        if (enumDescriptor == null) {
+            throw new IllegalStateException("No enum descriptor found for class " + protobufEnumClass);
+        }
+
+        String enumSchemaName = protobufNameResolver.getNameOfClass(protobufEnumClass);
+        var ref = RefUtils.constructRef(enumSchemaName);
         if (context.getDefinedModels().containsKey(enumSchemaName)) {
-            return new Schema<>().$ref("#/components/schemas/" + enumSchemaName);
+            return new Schema<>().$ref(ref);
         }
 
         // Create the enum schema
         StringSchema enumSchema = new StringSchema();
 
-        // Get enum values
-        if (protobufEnumClass.isEnum()) {
-            Object[] enumConstants = protobufEnumClass.getEnumConstants();
-            if (enumConstants != null) {
-                List<String> enumValues = Arrays.stream(enumConstants)
-                        .map(Object::toString)
-                        .filter(s -> !Objects.equals(s, "UNRECOGNIZED"))
-                        .toList();
-                enumSchema.setEnum(enumValues);
-            }
+        if (enumDescriptor.getOptions().getDeprecated()) {
+            enumSchema.setDeprecated(true);
+        }
+
+        Object[] enumConstants = protobufEnumClass.getEnumConstants();
+        if (enumConstants != null) {
+            List<String> enumValues = Arrays.stream(enumConstants)
+                    .map(Object::toString)
+                    .filter(s -> !Objects.equals(s, "UNRECOGNIZED"))
+                    .toList();
+            enumSchema.setEnum(enumValues);
         }
 
         // Register the enum schema in the context
         context.defineModel(enumSchemaName, enumSchema);
 
         // Return a $ref to the registered schema
-        return new Schema<>().$ref("#/components/schemas/" + enumSchemaName);
+        return new Schema<>().$ref(ref);
     }
 }
