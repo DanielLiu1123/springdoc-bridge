@@ -3,8 +3,8 @@ package springdocbridge.protobuf;
 import com.google.protobuf.util.JsonFormat;
 import jacksonmodule.protobuf.ProtobufModule;
 import org.springdoc.core.configuration.SpringDocConfiguration;
+import org.springdoc.core.properties.SpringDocConfigProperties;
 import org.springdoc.core.providers.ObjectMapperProvider;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -51,7 +51,7 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnBean(SpringDocConfiguration.class) // springdoc enabled
 @ConditionalOnProperty(prefix = SpringDocBridgeProtobufProperties.PREFIX, name = "enabled", matchIfMissing = true)
 @EnableConfigurationProperties(SpringDocBridgeProtobufProperties.class)
-public class SpringDocBridgeProtobufAutoConfiguration implements InitializingBean {
+public class SpringDocBridgeProtobufAutoConfiguration {
 
     private final ObjectMapperProvider objectMapperProvider;
     private final SpringDocBridgeProtobufProperties springDocBridgeProtobufProperties;
@@ -83,17 +83,12 @@ public class SpringDocBridgeProtobufAutoConfiguration implements InitializingBea
      * JSON mapping specification.
      */
     @Bean
-    public ProtobufModelConverter springdocBridgeProtobufModelConverter() {
+    public ProtobufModelConverter springdocBridgeProtobufModelConverter(
+            SpringDocConfigProperties springDocConfigProperties) {
         return new ProtobufModelConverter(
                 objectMapperProvider,
-                new ProtobufNameResolver(springDocBridgeProtobufProperties.getSchemaNamingStrategy()));
-    }
-
-    @Override
-    public void afterPropertiesSet() {
-        var objectMapper = objectMapperProvider.jsonMapper();
-
-        // Make SpringDoc support protobuf message for generating OpenAPI schema.
-        objectMapper.registerModules(new ProtobufSchemaModule());
+                new ProtobufNameResolver(
+                        springDocBridgeProtobufProperties.getSchemaNamingStrategy(),
+                        springDocConfigProperties.isUseFqn()));
     }
 }

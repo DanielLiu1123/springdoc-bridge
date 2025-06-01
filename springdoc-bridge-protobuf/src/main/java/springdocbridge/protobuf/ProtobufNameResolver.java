@@ -20,8 +20,9 @@ public class ProtobufNameResolver extends TypeNameResolver {
 
     private final SchemaNamingStrategy schemaNamingStrategy;
 
-    public ProtobufNameResolver(SchemaNamingStrategy schemaNamingStrategy) {
+    public ProtobufNameResolver(SchemaNamingStrategy schemaNamingStrategy, boolean useFqn) {
         this.schemaNamingStrategy = schemaNamingStrategy;
+        setUseFqn(useFqn);
     }
 
     @Override
@@ -35,6 +36,17 @@ public class ProtobufNameResolver extends TypeNameResolver {
                 };
             }
         }
+
+        if (isProtobufEnum(cls)) {
+            var desc = getEnumDescriptor(cls);
+            if (desc != null) {
+                return switch (schemaNamingStrategy) {
+                    case PROTOBUF -> desc.getFullName();
+                    case SPRINGDOC -> super.getNameOfClass(cls);
+                };
+            }
+        }
+
         return super.getNameOfClass(cls);
     }
 
@@ -52,10 +64,6 @@ public class ProtobufNameResolver extends TypeNameResolver {
         return null;
     }
 
-    static boolean isProtobufEnum(Class<?> cls) {
-        return ProtocolMessageEnum.class.isAssignableFrom(cls) && cls.isEnum();
-    }
-
     @Nullable
     static Descriptors.EnumDescriptor getEnumDescriptor(Class<?> cls) {
         if (isProtobufEnum(cls)) {
@@ -68,5 +76,13 @@ public class ProtobufNameResolver extends TypeNameResolver {
             }
         }
         return null;
+    }
+
+    static boolean isProtobufEnum(Class<?> cls) {
+        return ProtocolMessageEnum.class.isAssignableFrom(cls) && cls.isEnum();
+    }
+
+    static boolean isProtobufMessage(Class<?> cls) {
+        return Message.class.isAssignableFrom(cls);
     }
 }

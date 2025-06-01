@@ -24,6 +24,7 @@ message User {
   repeated string tags = 13;
   map<string, string> metadata = 14;
   map<string, PhoneNumber> phone_number_map = 15;
+  map<string, UserStatus> enums_map = 200;
   UserPreferences preferences = 16;
   google.protobuf.Timestamp created_at = 17;
   google.protobuf.Timestamp updated_at = 18;

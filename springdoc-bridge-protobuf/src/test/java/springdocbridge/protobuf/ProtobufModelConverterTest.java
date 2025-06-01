@@ -288,7 +288,6 @@ class ProtobufModelConverterTest {
     private static ModelConverterContext getModelConverterContext() {
 
         var objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new ProtobufSchemaModule());
 
         var objectMapperProvider = mock(ObjectMapperProvider.class);
         when(objectMapperProvider.jsonMapper()).thenReturn(objectMapper);
@@ -296,7 +295,7 @@ class ProtobufModelConverterTest {
         var modelConverters = ModelConverters.getInstance(true);
         modelConverters.addConverter(new ModelResolver(objectMapperProvider.jsonMapper()));
         modelConverters.addConverter(new ProtobufModelConverter(
-                objectMapperProvider, new ProtobufNameResolver(SchemaNamingStrategy.PROTOBUF)));
+                objectMapperProvider, new ProtobufNameResolver(SchemaNamingStrategy.PROTOBUF, true)));
 
         return new ModelConverterContextImpl(modelConverters.getConverters());
     }

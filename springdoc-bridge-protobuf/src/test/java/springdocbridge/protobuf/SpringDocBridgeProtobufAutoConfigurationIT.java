@@ -1,11 +1,9 @@
 package springdocbridge.protobuf;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springdoc.core.providers.ObjectMapperProvider;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -76,19 +74,6 @@ class SpringDocBridgeProtobufAutoConfigurationIT {
     void shouldRegisterSpringdocBridgeProtobufModelConverter() {
         try (var ctx = newAppBuilder().run()) {
             assertThatCode(() -> ctx.getBean(ProtobufModelConverter.class)).doesNotThrowAnyException();
-        }
-    }
-
-    @Test
-    @DisplayName("Should register ProtobufSchemaModule with ObjectMapper")
-    void shouldRegisterProtobufSchemaModuleWithObjectMapper() {
-        try (var ctx = newAppBuilder().run()) {
-            var objectMapperProvider = ctx.getBean(ObjectMapperProvider.class);
-            var objectMapper = objectMapperProvider.jsonMapper();
-
-            // Verify ProtobufSchemaModule is registered
-            var registeredModules = objectMapper.getRegisteredModuleIds();
-            assertThat(registeredModules).contains(ProtobufSchemaModule.class.getName());
         }
     }
 
