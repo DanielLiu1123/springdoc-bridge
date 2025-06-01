@@ -1,5 +1,17 @@
 package example;
 
+import com.example.user.v1.BatchCreateUsersRequest;
+import com.example.user.v1.BatchCreateUsersResponse;
+import com.example.user.v1.CreateUserRequest;
+import com.example.user.v1.CreateUserResponse;
+import com.example.user.v1.GetUserResponse;
+import com.example.user.v1.ListUsersResponse;
+import com.example.user.v1.PatchUserRequest;
+import com.example.user.v1.PatchUserResponse;
+import com.example.user.v1.SearchUsersRequest;
+import com.example.user.v1.SearchUsersResponse;
+import com.example.user.v1.UpdateUserResponse;
+import com.example.user.v1.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,18 +30,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import user.v1.BatchCreateUsersRequest;
-import user.v1.BatchCreateUsersResponse;
-import user.v1.CreateUserRequest;
-import user.v1.CreateUserResponse;
-import user.v1.GetUserResponse;
-import user.v1.ListUsersResponse;
-import user.v1.PatchUserRequest;
-import user.v1.PatchUserResponse;
-import user.v1.SearchUsersRequest;
-import user.v1.SearchUsersResponse;
-import user.v1.UpdateUserResponse;
-import user.v1.User;
 
 /**
  * REST Controller demonstrating Spring Boot + OpenAPI integration
