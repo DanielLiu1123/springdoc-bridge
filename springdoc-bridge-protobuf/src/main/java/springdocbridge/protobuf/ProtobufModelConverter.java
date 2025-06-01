@@ -144,6 +144,7 @@ public class ProtobufModelConverter implements ModelConverter {
 
         for (var field : descriptor.getFields()) {
             var fieldType = getGetterReturnType(cls, field);
+            var fieldName = underlineToCamel(field.getName());
 
             var fieldSchema = context.resolve(
                     new AnnotatedType(fieldType).schemaProperty(true).resolveAsRef(true));
@@ -151,10 +152,10 @@ public class ProtobufModelConverter implements ModelConverter {
                 fieldSchema = newSchema(fieldSchema).deprecated(true);
             }
 
-            schema.addProperty(underlineToCamel(field.getName()), fieldSchema);
+            schema.addProperty(fieldName, fieldSchema);
 
             if (!field.toProto().getProto3Optional()) {
-                schema.addRequiredItem(field.getName());
+                schema.addRequiredItem(fieldName);
             }
         }
 

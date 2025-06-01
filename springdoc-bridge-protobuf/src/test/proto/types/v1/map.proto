@@ -1,9 +1,8 @@
 syntax = "proto3";
 
-package user.v1;
+package types.v1;
 
 option java_multiple_files = true;
-option java_package = "user.v1";
 
 // Test message for map field handling
 message MapTestMessage {

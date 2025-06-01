@@ -15,7 +15,7 @@ message User {
   string first_name = 4;
   string last_name = 5;
   string display_name = 6;
-  Gender gender = 7;
+  Gender gender = 7 [deprecated = true];
   int32 age = 8;
   UserStatus status = 9;
   Address address = 10;
@@ -62,6 +62,9 @@ message User {
 
   // Gender enum
   enum Gender {
+
+    option deprecated = true;
+
     GENDER_UNSPECIFIED = 0;
     MALE = 1;
     FEMALE = 2;

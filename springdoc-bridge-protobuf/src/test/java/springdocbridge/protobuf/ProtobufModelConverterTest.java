@@ -38,7 +38,8 @@ import org.springdoc.core.providers.ObjectMapperProvider;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.ResolvableType;
 import springdocbridge.protobuf.SpringDocBridgeProtobufProperties.SchemaNamingStrategy;
-import user.v1.MapTestMessage;
+import types.v1.MapTestMessage;
+import types.v1.OptionalTestMessage;
 import user.v1.User;
 
 @DisplayName("ProtobufWellKnownTypeModelConverter Tests")
@@ -225,6 +226,18 @@ class ProtobufModelConverterTest {
             var arraySchema = (ArraySchema) phoneNumbersSchema;
             assertThat(arraySchema.getItems().get$ref()).isNotNull();
             assertThat(arraySchema.getItems().getProperties()).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("Required fields tests")
+    class RequiredFieldsTests {
+        @Test
+        @DisplayName("Should mark required fields by default")
+        void shouldMarkRequiredFieldsByDefault() {
+            var schema = resolve(OptionalTestMessage.class);
+
+            assertThat(schema.getRequired()).containsExactlyInAnyOrder("requiredString", "requiredMessage");
         }
     }
 
