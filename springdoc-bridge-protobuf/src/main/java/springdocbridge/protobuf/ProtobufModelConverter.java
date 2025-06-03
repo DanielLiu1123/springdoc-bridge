@@ -29,6 +29,7 @@ import io.swagger.v3.core.util.RefUtils;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.BooleanSchema;
 import io.swagger.v3.oas.models.media.IntegerSchema;
+import io.swagger.v3.oas.models.media.JsonSchema;
 import io.swagger.v3.oas.models.media.NumberSchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
@@ -256,7 +257,7 @@ public class ProtobufModelConverter implements ModelConverter {
         map.put(Value.class, new Schema<>());
 
         // NullValue: null
-        map.put(NullValue.class, new Schema<>());
+        map.put(NullValue.class, new JsonSchema().typesItem("null"));
 
         // FieldMask: string
         map.put(FieldMask.class, new StringSchema());
