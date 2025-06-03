@@ -44,7 +44,6 @@ import java.util.Map;
 import java.util.Objects;
 import org.springdoc.core.providers.ObjectMapperProvider;
 import org.springframework.beans.BeanUtils;
-import org.springframework.util.StringUtils;
 
 /**
  * OpenAPI model converter that provides specialized schema generation for Protocol Buffers (protobuf)
@@ -175,38 +174,47 @@ public class ProtobufModelConverter implements ModelConverter {
     /**
      * Find the getter method for the given field descriptor.
      */
-    public static Type getGetterReturnType(Class<?> clazz, Descriptors.FieldDescriptor fieldDescriptor) {
-        var name = underlineToCamel(fieldDescriptor.getName());
+    private static Type getGetterReturnType(Class<?> javaClass, Descriptors.FieldDescriptor fieldDescriptor) {
+        String fieldName = fieldDescriptor.getName();
 
-        String[] possibleMethodNames = {
-            "get" + StringUtils.capitalize(name),
-            "get" + StringUtils.capitalize(name) + "List", // repeated fields
-            "get" + StringUtils.capitalize(name) + "Map" // map fields
-        };
-
-        for (String methodName : possibleMethodNames) {
-            try {
-                Method method = clazz.getMethod(methodName);
-                return method.getGenericReturnType();
-            } catch (NoSuchMethodException e) {
-                // no-op
-            }
+        String getterMethodName;
+        if (fieldDescriptor.isMapField()) {
+            getterMethodName = "get" + underlineToPascal(fieldName) + "Map";
+        } else if (fieldDescriptor.isRepeated()) {
+            getterMethodName = "get" + underlineToPascal(fieldName) + "List";
+        } else {
+            getterMethodName = "get" + underlineToPascal(fieldName);
         }
 
-        throw new IllegalStateException("No getter method found for " + name + " in " + clazz);
+        try {
+            Method getterMethod = javaClass.getMethod(getterMethodName);
+            return getterMethod.getGenericReturnType();
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static String underlineToCamel(String name) {
         var sb = new StringBuilder();
-        for (var i = 0; i < name.length(); i++) {
+        var len = name.length();
+        var end = len - 1;
+        for (var i = 0; i < len; i++) {
             var c = name.charAt(i);
-            if (c == '_') {
+            if (c == '_' && i < end) {
                 sb.append(Character.toUpperCase(name.charAt(++i)));
             } else {
                 sb.append(c);
             }
         }
         return sb.toString();
+    }
+
+    private static String underlineToPascal(String name) {
+        var n = underlineToCamel(name);
+        if (n.isBlank()) {
+            return n;
+        }
+        return Character.toUpperCase(n.charAt(0)) + n.substring(1);
     }
 
     private static Map<Class<?>, Schema<?>> createWellKnownTypeSchemas() {
