@@ -113,17 +113,17 @@ public class ProtobufModelConverter implements ModelConverter {
         }
 
         if (ProtobufNameResolver.isProtobufEnum(cls)) {
-            return createSchemaForEnum(cls, context);
+            return createSchemaForEnum(cls, context, type.isResolveAsRef());
         }
 
         if (ProtobufNameResolver.isProtobufMessage(cls)) {
-            return createSchemaForMessage(cls, context);
+            return createSchemaForMessage(cls, context, type.isResolveAsRef());
         }
 
         return chain.hasNext() ? chain.next().resolve(type, context, chain) : null;
     }
 
-    private Schema<?> createSchemaForMessage(Class<?> cls, ModelConverterContext context) {
+    private Schema<?> createSchemaForMessage(Class<?> cls, ModelConverterContext context, boolean resolveAsRef) {
 
         var descriptor = ProtobufNameResolver.getDescriptor(cls);
         if (descriptor == null) {
@@ -133,7 +133,9 @@ public class ProtobufModelConverter implements ModelConverter {
         var schemaName = protobufNameResolver.getNameOfClass(cls);
         var ref = RefUtils.constructRef(schemaName);
         if (context.getDefinedModels().containsKey(schemaName)) {
-            return new Schema<>().$ref(ref);
+            return resolveAsRef
+                    ? new Schema<>().$ref(ref)
+                    : context.getDefinedModels().get(schemaName);
         }
 
         var schema = new ObjectSchema();
@@ -162,8 +164,7 @@ public class ProtobufModelConverter implements ModelConverter {
         // Register the enum schema in the context
         context.defineModel(schemaName, schema);
 
-        // Return a $ref to the registered schema
-        return new Schema<>().$ref(ref);
+        return resolveAsRef ? new Schema<>().$ref(ref) : schema;
     }
 
     private static Schema<?> newSchema(Schema<?> fieldSchema) {
@@ -282,7 +283,8 @@ public class ProtobufModelConverter implements ModelConverter {
      *
      * @see <a href="https://github.com/DanielLiu1123/springdoc-bridge/issues/5">Reuse enum</a>
      */
-    private Schema<?> createSchemaForEnum(Class<?> protobufEnumClass, ModelConverterContext context) {
+    private Schema<?> createSchemaForEnum(
+            Class<?> protobufEnumClass, ModelConverterContext context, boolean resolveAsRef) {
 
         var enumDescriptor = ProtobufNameResolver.getEnumDescriptor(protobufEnumClass);
         if (enumDescriptor == null) {
@@ -292,7 +294,9 @@ public class ProtobufModelConverter implements ModelConverter {
         String enumSchemaName = protobufNameResolver.getNameOfClass(protobufEnumClass);
         var ref = RefUtils.constructRef(enumSchemaName);
         if (context.getDefinedModels().containsKey(enumSchemaName)) {
-            return new Schema<>().$ref(ref);
+            return resolveAsRef
+                    ? new Schema<>().$ref(ref)
+                    : context.getDefinedModels().get(enumSchemaName);
         }
 
         // Create the enum schema
@@ -314,7 +318,8 @@ public class ProtobufModelConverter implements ModelConverter {
         // Register the enum schema in the context
         context.defineModel(enumSchemaName, enumSchema);
 
-        // Return a $ref to the registered schema
-        return new Schema<>().$ref(ref);
+        return resolveAsRef
+                ? new Schema<>().$ref(ref)
+                : context.getDefinedModels().get(enumSchemaName);
     }
 }
