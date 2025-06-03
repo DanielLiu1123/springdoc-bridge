@@ -26,8 +26,8 @@ public class ProtobufNameResolver extends TypeNameResolver {
     }
 
     @Override
-    protected String getNameOfClass(Class<?> cls) {
-        if (Message.class.isAssignableFrom(cls)) {
+    public String getNameOfClass(Class<?> cls) {
+        if (isProtobufMessage(cls)) {
             var desc = getDescriptor(cls);
             if (desc != null) {
                 return switch (schemaNamingStrategy) {
