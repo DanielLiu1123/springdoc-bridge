@@ -13,6 +13,7 @@ import com.google.protobuf.FieldMask;
 import com.google.protobuf.FloatValue;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.Int64Value;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.ListValue;
 import com.google.protobuf.NullValue;
 import com.google.protobuf.StringValue;
@@ -30,6 +31,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import pet.v1.Pet;
+import pet.v1.PetStatus;
+import pet.v1.PetType;
 import types.v1.TypesTest;
 
 @DisplayName("Protobuf Types Serialization and Deserialization Tests")
@@ -39,8 +43,10 @@ class ProtobufTypesSerializationTest {
 
     @BeforeEach
     void setUp() {
-        var typeRegistry =
-                TypeRegistry.newBuilder().add(Timestamp.getDescriptor()).build();
+        var typeRegistry = TypeRegistry.newBuilder()
+                .add(Timestamp.getDescriptor())
+                .add(Pet.getDescriptor())
+                .build();
 
         var printer = JsonFormat.printer()
                 .omittingInsignificantWhitespace()
@@ -329,6 +335,32 @@ class ProtobufTypesSerializationTest {
             // Assert - Verify basic Any field serialization
             assertThat(json).contains("\"anyField\":");
             assertThat(deserializedTypesTest.getAnyField()).isEqualTo(Any.getDefaultInstance());
+        }
+
+        @Test
+        @DisplayName("Should serialize and deserialize Any field with Pet message")
+        void shouldSerializeAndDeserializeAnyFieldWithPetMessage() throws InvalidProtocolBufferException {
+            // Arrange
+            Pet pet = Pet.newBuilder()
+                    .setId("any-test")
+                    .setName("Any Test Pet")
+                    .setType(PetType.DOG)
+                    .setStatus(PetStatus.AVAILABLE)
+                    .build();
+
+            TypesTest typesTest =
+                    TypesTest.newBuilder().setAnyField(Any.pack(pet)).build();
+
+            // Act
+            String json = writeValueAsString(typesTest);
+            TypesTest deserializedTypesTest = readValue(json, TypesTest.class);
+
+            // Assert
+            assertThat(json)
+                    .isEqualTo(
+                            """
+                    {"anyField":{"@type":"type.googleapis.com/pet.v1.Pet","id":"any-test","name":"Any Test Pet","type":"DOG","status":"AVAILABLE","tags":[],"metadata":{},"previousAddresses":[]},"nullValueField":null}""");
+            assertThat(deserializedTypesTest.getAnyField().unpack(Pet.class)).isEqualTo(pet);
         }
 
         @Test
