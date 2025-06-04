@@ -18,39 +18,50 @@ import java.lang.reflect.Method;
 final class ProtobufMessageDeserializer<T extends MessageOrBuilder> extends JsonDeserializer<T> {
 
     private final ProtobufModule.Options options;
-    private final Method newBuilderMethod;
+    private final Message defaultInstance;
 
     public ProtobufMessageDeserializer(Class<T> clazz, ProtobufModule.Options options) {
         this.options = options;
-        this.newBuilderMethod = mustFindMethod(clazz, "newBuilder");
+        this.defaultInstance = getDefaultInstance(clazz);
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public T deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
 
         var treeNode = p.readValueAsTree();
 
         String json = treeNode.toString();
 
-        try {
-            var builder = (Message.Builder) newBuilderMethod.invoke(null);
+        var builder = defaultInstance.toBuilder();
 
-            options.parser().merge(json, builder);
+        options.parser().merge(json, builder);
 
-            @SuppressWarnings("unchecked")
-            T result = (T) builder.build();
-
-            return result;
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new IllegalStateException("Failed to deserialize protobuf message", e);
-        }
+        return (T) builder.build();
     }
 
-    private static Method mustFindMethod(Class<?> clazz, String name, Class<?>... parameterTypes) {
+    /**
+     * Gets the default instance of a protobuf message class using reflection.
+     * This method caches the default instance to avoid repeated reflection calls during deserialization.
+     *
+     * @param clazz the protobuf message class
+     * @return the default instance of the message
+     * @throws IllegalArgumentException if the class doesn't have a getDefaultInstance method or if invocation fails
+     */
+    private static Message getDefaultInstance(Class<?> clazz) {
         try {
-            return clazz.getMethod(name, parameterTypes);
+            Method getDefaultInstanceMethod = clazz.getMethod("getDefaultInstance");
+            Object result = getDefaultInstanceMethod.invoke(null);
+            if (result instanceof Message message) {
+                return message;
+            } else {
+                throw new IllegalArgumentException(
+                        "getDefaultInstance() did not return a Message instance for class " + clazz);
+            }
         } catch (NoSuchMethodException e) {
-            throw new IllegalArgumentException("No method found for " + name + " in class " + clazz, e);
+            throw new IllegalArgumentException("No getDefaultInstance method found in class " + clazz, e);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new IllegalArgumentException("Failed to invoke getDefaultInstance method for class " + clazz, e);
         }
     }
 }
