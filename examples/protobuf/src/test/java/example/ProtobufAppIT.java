@@ -253,8 +253,7 @@ class ProtobufAppIT {
 
             // Verify Any fields
             JsonNode anyField = properties.get("anyField");
-            assertThat(anyField.get("type").asText()).isEqualTo("object");
-            assertThat(anyField.has("additionalProperties")).isTrue();
+            assertThat(anyField.get("$ref").asText()).isEqualTo("#/components/schemas/google.protobuf.Any");
         }
 
         @Test

@@ -34,6 +34,7 @@ import io.swagger.v3.oas.models.media.NumberSchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
+import jakarta.annotation.Nullable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -43,6 +44,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 import org.springdoc.core.providers.ObjectMapperProvider;
 import org.springframework.beans.BeanUtils;
 
@@ -83,8 +85,8 @@ import org.springframework.beans.BeanUtils;
  */
 public class ProtobufModelConverter implements ModelConverter {
 
-    private static final Map<Class<?>, Schema<?>> WELL_KNOWN_TYPE_SCHEMAS = createWellKnownTypeSchemas();
-    private static final Map<Class<?>, Schema<?>> SPECIAL_TYPE_SCHEMAS = createSpecialTypeSchemas();
+    @SuppressWarnings("rawtypes")
+    private static final Map<Class<?>, Schema> SPECIAL_TYPE_SCHEMAS = createSpecialTypeSchemas();
 
     private final ObjectMapperProvider springDocObjectMapper;
     private final ProtobufNameResolver protobufNameResolver;
@@ -104,12 +106,9 @@ public class ProtobufModelConverter implements ModelConverter {
 
         Class<?> cls = javaType.getRawClass();
 
-        // Handle well-known types
-        if (WELL_KNOWN_TYPE_SCHEMAS.containsKey(cls)) {
-            return WELL_KNOWN_TYPE_SCHEMAS.get(cls);
-        }
-        if (SPECIAL_TYPE_SCHEMAS.containsKey(cls)) {
-            return SPECIAL_TYPE_SCHEMAS.get(cls);
+        Schema<?> schemaForSpecialType = createSchemaForSpecialType(cls, context);
+        if (schemaForSpecialType != null) {
+            return schemaForSpecialType;
         }
 
         if (ProtobufNameResolver.isProtobufEnum(cls)) {
@@ -164,6 +163,32 @@ public class ProtobufModelConverter implements ModelConverter {
 
         // Return a $ref to the registered schema
         return new Schema<>().$ref(ref);
+    }
+
+    @Nullable
+    private Schema<?> createSchemaForSpecialType(Class<?> cls, ModelConverterContext context) {
+
+        for (var en : SPECIAL_TYPE_SCHEMAS.entrySet()) {
+            if (en.getKey().isAssignableFrom(cls)) {
+                return en.getValue();
+            }
+        }
+
+        // Any: object with @type field
+        // example:
+        //  - {"@type": "type.googleapis.com/google.protobuf.Timestamp", "value": "2021-01-01T00:00:00Z"}
+        //  - {"@type": "type.googleapis.com/google.type.Date", "year": 2021, "month": 1, "day": 1}
+        if (Any.class.isAssignableFrom(cls)) {
+            return createSchema(cls, context, () -> new ObjectSchema()
+                    .additionalProperties(true)
+                    .addProperty("@type", new StringSchema()));
+        }
+
+        if (Empty.class.isAssignableFrom(cls)) {
+            return createSchema(cls, context, ObjectSchema::new);
+        }
+
+        return null;
     }
 
     private static Schema<?> newSchema(Schema<?> fieldSchema) {
@@ -241,37 +266,40 @@ public class ProtobufModelConverter implements ModelConverter {
         return Map.copyOf(map);
     }
 
-    private static Map<Class<?>, Schema<?>> createSpecialTypeSchemas() {
-        Map<Class<?>, Schema<?>> map = new HashMap<>();
+    //    @SuppressWarnings("unchecked")
+    private static Map<Class<?>, Schema> createSpecialTypeSchemas() {
+        return Map.ofEntries(
+                // Wrapper types
+                Map.entry(BoolValue.class, new BooleanSchema()),
+                Map.entry(Int32Value.class, new IntegerSchema().format("int32")),
+                Map.entry(UInt32Value.class, new IntegerSchema().format("int32").minimum(BigDecimal.ZERO)),
+                Map.entry(Int64Value.class, new IntegerSchema().format("int64")),
+                Map.entry(UInt64Value.class, new IntegerSchema().format("int64").minimum(BigDecimal.ZERO)),
+                Map.entry(FloatValue.class, new NumberSchema().format("float")),
+                Map.entry(DoubleValue.class, new NumberSchema().format("double")),
+                Map.entry(StringValue.class, new StringSchema()),
+                Map.entry(BytesValue.class, new StringSchema().format("byte")),
 
-        // Any: object with @type field
-        map.put(Any.class, new ObjectSchema().additionalProperties(true).addProperty("@type", new StringSchema()));
+                // JSON types
+                Map.entry(Struct.class, new ObjectSchema().additionalProperties(true)),
+                Map.entry(Value.class, new JsonSchema()),
+                Map.entry(ListValue.class, new ArraySchema().items(new JsonSchema())),
+                Map.entry(NullValue.class, new JsonSchema().typesItem("null")),
 
-        // Struct: any JSON object
-        map.put(Struct.class, new ObjectSchema().additionalProperties(true));
+                // Special types
 
-        // ListValue: array
-        map.put(ListValue.class, new ArraySchema().items(new Schema<>()));
-
-        // Value: any JSON value
-        map.put(Value.class, new Schema<>());
-
-        // NullValue: null
-        map.put(NullValue.class, new JsonSchema().typesItem("null"));
-
-        // FieldMask: string
-        map.put(FieldMask.class, new StringSchema());
-
-        // Empty: empty object
-        map.put(Empty.class, new ObjectSchema());
-
-        // ByteString: base64 string
-        map.put(ByteString.class, new StringSchema().format("byte"));
-
-        // ProtocolStringList: repeated string
-        map.put(ProtocolStringList.class, new ArraySchema().items(new StringSchema()));
-
-        return Map.copyOf(map);
+                // Timestamp: RFC 3339 string
+                Map.entry(Timestamp.class, new StringSchema().format("date-time")),
+                // Duration: string with "s" suffix
+                // example: "1s", "1.5s", "-1s", "-1.5s"
+                Map.entry(Duration.class, new StringSchema().pattern("^-?\\d+(\\.\\d+)?s$")),
+                // FieldMask: string
+                // example: "user.name,user.email"
+                Map.entry(FieldMask.class, new StringSchema()),
+                // ByteString: base64 string
+                Map.entry(ByteString.class, new StringSchema().format("byte")),
+                // ProtocolStringList: repeated string
+                Map.entry(ProtocolStringList.class, new ArraySchema().items(new StringSchema())));
     }
 
     /**
@@ -315,6 +343,19 @@ public class ProtobufModelConverter implements ModelConverter {
         context.defineModel(enumSchemaName, enumSchema);
 
         // Return a $ref to the registered schema
+        return new Schema<>().$ref(ref);
+    }
+
+    private Schema<?> createSchema(Class<?> cls, ModelConverterContext context, Supplier<Schema<?>> schemaSupplier) {
+        var schemaName = protobufNameResolver.getNameOfClass(cls);
+        var ref = RefUtils.constructRef(schemaName);
+
+        if (context.getDefinedModels().containsKey(schemaName)) {
+            return new Schema<>().$ref(ref);
+        }
+
+        context.defineModel(schemaName, schemaSupplier.get());
+
         return new Schema<>().$ref(ref);
     }
 }
