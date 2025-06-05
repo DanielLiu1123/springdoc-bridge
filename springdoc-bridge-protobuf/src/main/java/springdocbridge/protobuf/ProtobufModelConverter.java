@@ -39,7 +39,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -241,29 +240,6 @@ public class ProtobufModelConverter implements ModelConverter {
             return n;
         }
         return Character.toUpperCase(n.charAt(0)) + n.substring(1);
-    }
-
-    private static Map<Class<?>, Schema<?>> createWellKnownTypeSchemas() {
-        Map<Class<?>, Schema<?>> map = new HashMap<>();
-
-        // Timestamp: RFC 3339 string
-        map.put(Timestamp.class, new StringSchema().format("date-time"));
-
-        // Duration: string with "s" suffix
-        map.put(Duration.class, new StringSchema().pattern("^-?\\d+(\\.\\d+)?s$"));
-
-        // Wrapper types: same as wrapped primitive type, but nullable
-        map.put(BoolValue.class, new BooleanSchema());
-        map.put(Int32Value.class, new IntegerSchema().format("int32"));
-        map.put(UInt32Value.class, new IntegerSchema().format("int32").minimum(BigDecimal.ZERO));
-        map.put(Int64Value.class, new IntegerSchema().format("int64"));
-        map.put(UInt64Value.class, new IntegerSchema().format("int64").minimum(BigDecimal.ZERO));
-        map.put(FloatValue.class, new NumberSchema().format("float"));
-        map.put(DoubleValue.class, new NumberSchema().format("double"));
-        map.put(StringValue.class, new StringSchema());
-        map.put(BytesValue.class, new StringSchema().format("byte"));
-
-        return Map.copyOf(map);
     }
 
     @SuppressWarnings("rawtypes")
