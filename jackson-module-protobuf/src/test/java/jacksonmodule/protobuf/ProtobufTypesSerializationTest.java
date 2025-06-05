@@ -530,7 +530,10 @@ class ProtobufTypesSerializationTest {
                                     Value.newBuilder().setStringValue("item1").build())
                             .build())
                     .setNullValueField(NullValue.NULL_VALUE)
-                    .setFieldMask(FieldMask.newBuilder().addPaths("user.name").build())
+                    .setFieldMask(FieldMask.newBuilder()
+                            .addPaths("user.name")
+                            .addPaths("user.email")
+                            .build())
                     .setEmptyField(Empty.getDefaultInstance())
                     .build();
 
@@ -547,6 +550,7 @@ class ProtobufTypesSerializationTest {
             assertThat(json).contains("\"boolWrapper\":true");
             assertThat(json).contains("\"stringWrapper\":\"Hello, World!\"");
             assertThat(json).contains("\"emptyField\":{}");
+            assertThat(json).contains("\"fieldMask\":\"user.name,user.email\"");
         }
     }
 }
