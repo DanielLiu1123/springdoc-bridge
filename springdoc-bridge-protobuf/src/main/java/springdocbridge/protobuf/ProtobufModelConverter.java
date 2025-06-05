@@ -266,7 +266,7 @@ public class ProtobufModelConverter implements ModelConverter {
         return Map.copyOf(map);
     }
 
-    //    @SuppressWarnings("unchecked")
+    @SuppressWarnings("rawtypes")
     private static Map<Class<?>, Schema> createSpecialTypeSchemas() {
         return Map.ofEntries(
                 // Wrapper types
