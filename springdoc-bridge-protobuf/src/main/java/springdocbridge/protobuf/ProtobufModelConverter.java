@@ -180,7 +180,8 @@ public class ProtobufModelConverter implements ModelConverter {
         if (Any.class.isAssignableFrom(cls)) {
             return createSchema(cls, context, () -> new ObjectSchema()
                     .additionalProperties(true)
-                    .addProperty("@type", new StringSchema()));
+                    .addProperty("@type", new StringSchema())
+                    .addRequiredItem("@type"));
         }
 
         if (Empty.class.isAssignableFrom(cls)) {
