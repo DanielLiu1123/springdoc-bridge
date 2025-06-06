@@ -28,7 +28,7 @@ import lombok.Builder;
  *   <li>Protobuf enums implementing {@link ProtocolMessageEnum}</li>
  * </ul>
  *
- * <p>The module uses Google's {@link com.google.protobuf.util.JsonFormat} internally to ensure
+ * <p>The module uses Google's {@link JsonFormat} internally to ensure
  * compatibility with the official protobuf JSON mapping specification.
  *
  * <p> Usage Example:
@@ -49,7 +49,7 @@ import lombok.Builder;
  * }</pre>
  *
  * @author Freeman
- * @see com.google.protobuf.util.JsonFormat
+ * @see JsonFormat
  * @see com.google.protobuf.Message
  * @see ProtocolMessageEnum
  * @since 0.1.0
@@ -141,8 +141,8 @@ public final class ProtobufModule extends SimpleModule {
          * When serializeEnumAsInt is true and printer is null, configures the default printer to print enums as integers.
          *
          * @param serializeEnumAsInt whether to serialize protobuf enums as integers
-         * @param parser the JSON parser for converting JSON to protobuf messages
-         * @param printer the JSON printer for converting protobuf messages to JSON
+         * @param parser             the JSON parser for converting JSON to protobuf messages
+         * @param printer            the JSON printer for converting protobuf messages to JSON
          */
         public Options {
             if (parser == null) {
