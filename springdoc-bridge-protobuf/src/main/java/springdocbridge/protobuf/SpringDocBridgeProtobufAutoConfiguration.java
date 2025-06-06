@@ -37,10 +37,10 @@ import org.springframework.context.annotation.Bean;
  * }</pre>
  *
  * @author Freeman
- * @since 0.1.0
  * @see SpringDocConfiguration
  * @see ProtobufModelConverter
  * @see com.google.protobuf.util.JsonFormat
+ * @since 0.1.0
  */
 @AutoConfiguration(after = SpringDocConfiguration.class)
 @ConditionalOnClass({
@@ -74,7 +74,11 @@ public class SpringDocBridgeProtobufAutoConfiguration {
             name = "register-protobuf-module",
             matchIfMissing = true)
     public Jackson2ObjectMapperBuilderCustomizer springDocBridgeProtobufJackson2ObjectMapperBuilderCustomizer() {
-        return builder -> builder.modules(new ProtobufModule());
+        return builder -> builder.modules(customizers -> {
+            if (customizers.stream().noneMatch(c -> c instanceof ProtobufModule)) {
+                customizers.add(new ProtobufModule());
+            }
+        });
     }
 
     /**
