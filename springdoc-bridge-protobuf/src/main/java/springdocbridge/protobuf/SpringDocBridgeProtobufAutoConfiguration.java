@@ -74,9 +74,9 @@ public class SpringDocBridgeProtobufAutoConfiguration {
             name = "register-protobuf-module",
             matchIfMissing = true)
     public Jackson2ObjectMapperBuilderCustomizer springDocBridgeProtobufJackson2ObjectMapperBuilderCustomizer() {
-        return builder -> builder.modules(customizers -> {
-            if (customizers.stream().noneMatch(c -> c instanceof ProtobufModule)) {
-                customizers.add(new ProtobufModule());
+        return builder -> builder.modules(modules -> {
+            if (modules.stream().noneMatch(c -> c instanceof ProtobufModule)) {
+                modules.add(new ProtobufModule());
             }
         });
     }
