@@ -49,7 +49,8 @@ class ProtobufModuleTest {
                     .build();
 
             String expectedJson =
-                    "{\"id\":\"pet-123\",\"name\":\"Fluffy\",\"type\":\"CAT\",\"status\":\"AVAILABLE\",\"tags\":[],\"metadata\":{},\"previousAddresses\":[]}";
+                    """
+                            {"id":"pet-123","name":"Fluffy","type":"CAT","status":"AVAILABLE","tags":[],"metadata":{},"previousAddresses":[]}""";
 
             // Act
             String actualJson = writeValueAsString(pet);
@@ -87,7 +88,8 @@ class ProtobufModuleTest {
                     .build();
 
             String expectedJson =
-                    "{\"id\":\"pet-123\",\"name\":\"Buddy\",\"type\":\"DOG\",\"status\":\"SOLD\",\"owner\":{\"id\":\"owner-456\",\"name\":\"John Doe\",\"email\":\"john@example.com\",\"phone\":\"555-1234\",\"address\":{\"street\":\"123 Main St\",\"city\":\"Springfield\",\"state\":\"IL\",\"zipCode\":\"62701\",\"country\":\"USA\"}},\"tags\":[],\"metadata\":{},\"previousAddresses\":[]}";
+                    """
+                            {"id":"pet-123","name":"Buddy","type":"DOG","status":"SOLD","owner":{"id":"owner-456","name":"John Doe","email":"john@example.com","phone":"555-1234","address":{"street":"123 Main St","city":"Springfield","state":"IL","zipCode":"62701","country":"USA"}},"tags":[],"metadata":{},"previousAddresses":[]}""";
 
             // Act
             String actualJson = writeValueAsString(pet);
@@ -126,19 +128,10 @@ class ProtobufModuleTest {
             String actualJson = writeValueAsString(pet);
 
             // Assert
-            assertThat(actualJson).contains("\"id\":\"pet-123\"");
-            assertThat(actualJson).contains("\"name\":\"Max\"");
-            assertThat(actualJson).contains("\"type\":\"DOG\"");
-            assertThat(actualJson).contains("\"status\":\"AVAILABLE\"");
-            assertThat(actualJson).contains("\"tags\":[\"friendly\",\"trained\",\"vaccinated\"]");
-            assertThat(actualJson).contains("\"birthDate\":\"2020-01-15T10:30:00Z\"");
-            assertThat(actualJson).contains("\"lifeExpectancy\":\"378432000s\"");
-            assertThat(actualJson).contains("\"weight\":25.5");
-            assertThat(actualJson).contains("\"isVaccinated\":true");
-            assertThat(actualJson).contains("\"metadata\":");
-            assertThat(actualJson).contains("\"breed\":\"Golden Retriever\"");
-            assertThat(actualJson).contains("\"color\":\"Golden\"");
-            assertThat(actualJson).contains("\"microchip\":\"123456789\"");
+            String expectedJson =
+                    """
+                        {"id":"pet-123","name":"Max","type":"DOG","status":"AVAILABLE","tags":["friendly","trained","vaccinated"],"birthDate":"2020-01-15T10:30:00Z","lifeExpectancy":"378432000s","weight":25.5,"isVaccinated":true,"metadata":{"breed":"Golden Retriever","color":"Golden","microchip":"123456789"},"previousAddresses":[]}""";
+            assertThat(actualJson).isEqualTo(expectedJson);
         }
     }
 
@@ -366,7 +359,8 @@ class ProtobufModuleTest {
                     .build();
 
             String expectedJson =
-                    "{\"id\":\"round-trip-test\",\"name\":\"Consistency Pet\",\"type\":\"BIRD\",\"status\":\"SOLD\",\"tags\":[\"test\",\"round-trip\"],\"metadata\":{\"test\":\"value\"},\"previousAddresses\":[]}";
+                    """
+                            {"id":"round-trip-test","name":"Consistency Pet","type":"BIRD","status":"SOLD","tags":["test","round-trip"],"metadata":{"test":"value"},"previousAddresses":[]}""";
 
             // Act
             String actualJson = writeValueAsString(originalPet);
@@ -394,7 +388,8 @@ class ProtobufModuleTest {
                     .build();
 
             String expectedJson =
-                    "{\"id\":\"config-test\",\"name\":\"Module Test Pet\",\"type\":\"FISH\",\"status\":\"AVAILABLE\",\"tags\":[],\"metadata\":{},\"previousAddresses\":[]}";
+                    """
+                            {"id":"config-test","name":"Module Test Pet","type":"FISH","status":"AVAILABLE","tags":[],"metadata":{},"previousAddresses":[]}""";
 
             // Act
             String actualJson = writeValueAsString(pet);
