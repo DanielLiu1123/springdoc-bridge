@@ -9,6 +9,7 @@ import com.google.protobuf.DoubleValue;
 import com.google.protobuf.Duration;
 import com.google.protobuf.Timestamp;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.SneakyThrows;
@@ -118,10 +119,13 @@ class ProtobufModuleTest {
                             .build())
                     .setWeight(DoubleValue.of(25.5))
                     .setIsVaccinated(BoolValue.of(true))
-                    .putAllMetadata(Map.of(
-                            "breed", "Golden Retriever",
-                            "color", "Golden",
-                            "microchip", "123456789"))
+                    .putAllMetadata(new LinkedHashMap<>() {
+                        {
+                            put("breed", "Golden Retriever");
+                            put("color", "Golden");
+                            put("microchip", "123456789");
+                        }
+                    })
                     .build();
 
             // Act
