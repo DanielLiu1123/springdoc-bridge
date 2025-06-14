@@ -3,8 +3,10 @@ package jacksonmodule.protobuf;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.node.NumericNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.google.protobuf.NullValue;
 import com.google.protobuf.ProtocolMessageEnum;
 import java.io.IOException;
 import java.util.HashMap;
@@ -44,6 +46,14 @@ final class ProtobufEnumDeserializer<T extends Enum<T> & ProtocolMessageEnum> ex
 
         throw new IllegalArgumentException(
                 "Can't deserialize protobuf enum '" + clazz.getSimpleName() + "' from " + treeNode);
+    }
+
+    @Override
+    public T getNullValue(DeserializationContext ctxt) throws JsonMappingException {
+        if (NullValue.class.isAssignableFrom(clazz)) {
+            return clazz.cast(NullValue.NULL_VALUE);
+        }
+        return super.getNullValue(ctxt);
     }
 
     private T[] getEnumConstants(Class<T> clazz) {

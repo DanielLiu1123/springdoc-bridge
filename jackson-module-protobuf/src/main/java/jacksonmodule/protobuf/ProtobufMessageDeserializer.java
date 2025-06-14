@@ -3,8 +3,11 @@ package jacksonmodule.protobuf;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.protobuf.Message;
 import com.google.protobuf.MessageOrBuilder;
+import com.google.protobuf.NullValue;
+import com.google.protobuf.Value;
 import com.google.protobuf.util.JsonFormat;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -38,6 +41,18 @@ final class ProtobufMessageDeserializer<T extends MessageOrBuilder> extends Json
         options.parser().merge(json, builder);
 
         return (T) builder.build();
+    }
+
+    @Override
+    public T getNullValue(DeserializationContext ctxt) throws JsonMappingException {
+        var clazz = defaultInstance.getClass();
+        if (Value.class.isAssignableFrom(clazz)) {
+            @SuppressWarnings("unchecked")
+            var nullValue =
+                    (T) Value.newBuilder().setNullValue(NullValue.NULL_VALUE).build();
+            return nullValue;
+        }
+        return super.getNullValue(ctxt);
     }
 
     /**

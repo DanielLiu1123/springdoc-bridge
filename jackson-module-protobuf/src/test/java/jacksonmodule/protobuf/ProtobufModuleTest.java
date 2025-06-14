@@ -7,7 +7,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.DoubleValue;
 import com.google.protobuf.Duration;
+import com.google.protobuf.ListValue;
+import com.google.protobuf.NullValue;
+import com.google.protobuf.StringValue;
+import com.google.protobuf.Struct;
 import com.google.protobuf.Timestamp;
+import com.google.protobuf.Value;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -279,6 +284,83 @@ class ProtobufModuleTest {
 
             // Assert
             assertThat(actualPet).isEqualTo(expectedPet);
+        }
+
+        @Test
+        @DisplayName("Should deserialize value message")
+        void shouldDeserializeValueMessage() {
+            // Arrange
+            String inputDoubleValue = "1.23";
+            DoubleValue expectedDoubleValue = DoubleValue.of(1.23);
+
+            String inputStringValue = "\"Hello, World!\"";
+            StringValue expectedStringValue = StringValue.of("Hello, World!");
+
+            String inputBoolValue = "true";
+            BoolValue expectedBoolValue = BoolValue.of(true);
+
+            String inputNullValue = "null";
+            NullValue expectedNullValue = NullValue.NULL_VALUE;
+
+            String inputValueOfString = "\"test value\"";
+            Value expectedValueValue =
+                    Value.newBuilder().setStringValue("test value").build();
+
+            String inputValueOfNumber = "42.5";
+            Value expectedValueNumber = Value.newBuilder().setNumberValue(42.5).build();
+
+            String inputValueOfBool = "true";
+            Value expectedValueBool = Value.newBuilder().setBoolValue(true).build();
+
+            String inputValueOfNull = "null";
+            Value expectedValueNull =
+                    Value.newBuilder().setNullValue(NullValue.NULL_VALUE).build();
+
+            String inputValueOfList = "[\"item1\", 123, false, null]";
+            ListValue expectedListValue = ListValue.newBuilder()
+                    .addValues(Value.newBuilder().setStringValue("item1").build())
+                    .addValues(Value.newBuilder().setNumberValue(123).build())
+                    .addValues(Value.newBuilder().setBoolValue(false).build())
+                    .addValues(Value.newBuilder()
+                            .setNullValue(NullValue.NULL_VALUE)
+                            .build())
+                    .build();
+
+            String inputValueOfStruct = "{\"k1\": \"value\", \"k2\": 123, \"k3\": false, \"k4\": null}";
+            Struct expectedStructValue = Struct.newBuilder()
+                    .putFields("k1", Value.newBuilder().setStringValue("value").build())
+                    .putFields("k2", Value.newBuilder().setNumberValue(123).build())
+                    .putFields("k3", Value.newBuilder().setBoolValue(false).build())
+                    .putFields(
+                            "k4",
+                            Value.newBuilder()
+                                    .setNullValue(NullValue.NULL_VALUE)
+                                    .build())
+                    .build();
+
+            // Act
+            DoubleValue actualDoubleValue = readValue(inputDoubleValue, DoubleValue.class);
+            StringValue actualStringValue = readValue(inputStringValue, StringValue.class);
+            BoolValue actualBoolValue = readValue(inputBoolValue, BoolValue.class);
+            NullValue actualNullValue = readValue(inputNullValue, NullValue.class);
+            Value actualValueOfString = readValue(inputValueOfString, Value.class);
+            Value actualValueOfNumber = readValue(inputValueOfNumber, Value.class);
+            Value actualValueOfBool = readValue(inputValueOfBool, Value.class);
+            Value actualValueOfNull = readValue(inputValueOfNull, Value.class);
+            ListValue actualListValue = readValue(inputValueOfList, ListValue.class);
+            Struct actualStructValue = readValue(inputValueOfStruct, Struct.class);
+
+            // Assert
+            assertThat(actualDoubleValue).isEqualTo(expectedDoubleValue);
+            assertThat(actualStringValue).isEqualTo(expectedStringValue);
+            assertThat(actualBoolValue).isEqualTo(expectedBoolValue);
+            assertThat(actualNullValue).isEqualTo(expectedNullValue);
+            assertThat(actualValueOfString).isEqualTo(expectedValueValue);
+            assertThat(actualValueOfNumber).isEqualTo(expectedValueNumber);
+            assertThat(actualValueOfBool).isEqualTo(expectedValueBool);
+            assertThat(actualValueOfNull).isEqualTo(expectedValueNull);
+            assertThat(actualListValue).isEqualTo(expectedListValue);
+            assertThat(actualStructValue).isEqualTo(expectedStructValue);
         }
     }
 
