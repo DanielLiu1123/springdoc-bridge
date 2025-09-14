@@ -2,6 +2,7 @@ package springdocbridge.protobuf;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import jacksonmodule.protobuf.ProtobufModule;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
@@ -21,8 +22,7 @@ class SpringDocBridgeProtobufAutoConfigurationIT {
             assertThatCode(() -> ctx.getBean(SpringDocBridgeProtobufAutoConfiguration.class))
                     .doesNotThrowAnyException();
             assertThatCode(() -> ctx.getBean(ProtobufModelConverter.class)).doesNotThrowAnyException();
-            assertThatCode(() -> ctx.getBean("springDocBridgeProtobufJackson2ObjectMapperBuilderCustomizer"))
-                    .doesNotThrowAnyException();
+            assertThatCode(() -> ctx.getBean(ProtobufModule.class)).doesNotThrowAnyException();
             assertThatCode(() -> ctx.getBean(SpringDocBridgeProtobufProperties.class))
                     .doesNotThrowAnyException();
         }
@@ -53,8 +53,7 @@ class SpringDocBridgeProtobufAutoConfigurationIT {
     @DisplayName("Should register ProtobufModule with Jackson when enabled")
     void shouldRegisterProtobufModuleWhenEnabled() {
         try (var ctx = newAppBuilder().run()) {
-            assertThatCode(() -> ctx.getBean("springDocBridgeProtobufJackson2ObjectMapperBuilderCustomizer"))
-                    .doesNotThrowAnyException();
+            assertThatCode(() -> ctx.getBean("jacksonProtobufModule")).doesNotThrowAnyException();
         }
     }
 

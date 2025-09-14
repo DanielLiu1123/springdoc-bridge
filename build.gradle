@@ -42,14 +42,12 @@ allprojects {
         testCompileOnly("org.projectlombok:lombok:${lombokVersion}")
         testAnnotationProcessor("org.projectlombok:lombok:${lombokVersion}")
         compileOnly("com.github.spotbugs:spotbugs-annotations:${spotbugsAnnotationsVersion}")
+        // https://docs.gradle.org/current/userguide/upgrading_version_8.html#test_framework_implementation_dependencies
+        testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     }
 
     test {
         useJUnitPlatform()
-        dependencies {
-            // https://docs.gradle.org/current/userguide/upgrading_version_8.html#test_framework_implementation_dependencies
-            testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-        }
     }
 
     // spotless
