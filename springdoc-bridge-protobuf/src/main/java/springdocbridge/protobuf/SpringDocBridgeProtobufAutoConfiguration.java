@@ -8,8 +8,8 @@ import org.springdoc.core.providers.ObjectMapperProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
@@ -44,7 +44,6 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration(after = SpringDocConfiguration.class)
 @ConditionalOnClass({
-    Jackson2ObjectMapperBuilderCustomizer.class, // spring-boot-autoconfigure
     SpringDocConfiguration.class, // springdoc-openapi-starter-common
     JsonFormat.class // protobuf-java-util
 })
@@ -63,22 +62,14 @@ public class SpringDocBridgeProtobufAutoConfiguration {
         this.springDocBridgeProtobufProperties = springDocBridgeProtobufProperties;
     }
 
-    /**
-     * This customizer registers the {@link ProtobufModule} with Jackson, enabling automatic
-     * serialization and deserialization of protobuf messages and enums using Google's official
-     * JSON mapping format.
-     */
     @Bean
+    @ConditionalOnMissingBean
     @ConditionalOnProperty(
             prefix = SpringDocBridgeProtobufProperties.PREFIX,
             name = "register-protobuf-module",
             matchIfMissing = true)
-    public Jackson2ObjectMapperBuilderCustomizer springDocBridgeProtobufJackson2ObjectMapperBuilderCustomizer() {
-        return builder -> builder.modules(modules -> {
-            if (modules.stream().noneMatch(c -> c instanceof ProtobufModule)) {
-                modules.add(new ProtobufModule());
-            }
-        });
+    public ProtobufModule jacksonProtobufModule() {
+        return new ProtobufModule();
     }
 
     /**

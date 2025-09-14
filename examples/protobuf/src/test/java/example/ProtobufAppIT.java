@@ -10,10 +10,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.boot.web.server.test.LocalServerPort;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.test.web.servlet.client.RestTestClient;
 
 /**
  * Integration tests for ProtobufApp OpenAPI documentation generation
@@ -32,8 +31,7 @@ class ProtobufAppIT {
     @LocalServerPort
     private int port;
 
-    @Autowired
-    private TestRestTemplate restTemplate;
+    private final RestTestClient client = RestTestClient.bindToServer().build();
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -56,12 +54,14 @@ class ProtobufAppIT {
             String url = "http://localhost:" + port + "/v3/api-docs";
 
             // When
-            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+            var resp = client.get().uri(url).exchange();
 
             // Then
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-            assertThat(response.getBody()).isNotNull();
-            assertThat(response.getBody()).contains("openapi");
+            resp.expectStatus().isEqualTo(HttpStatus.OK);
+            resp.expectBody(String.class).consumeWith(s -> {
+                assertThat(s.getResponseBody()).isNotNull();
+                assertThat(s.getResponseBody()).contains("openapi");
+            });
         }
 
         @Test
@@ -71,11 +71,13 @@ class ProtobufAppIT {
             String url = "http://localhost:" + port + "/v3/api-docs";
 
             // When
-            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
-            JsonNode actualApiDocs = objectMapper.readTree(response.getBody());
+            var resp = client.get().uri(url).exchange();
+
+            JsonNode actualApiDocs =
+                    objectMapper.readTree(resp.returnResult(String.class).getResponseBody());
 
             // Then
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+            resp.expectStatus().isEqualTo(HttpStatus.OK);
 
             // Verify basic structure
             assertThat(actualApiDocs.get("openapi").asText()).isEqualTo("3.1.0");
@@ -354,8 +356,10 @@ class ProtobufAppIT {
     // Helper methods
     private JsonNode getApiDocs() throws IOException {
         String url = "http://localhost:" + port + "/v3/api-docs";
-        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
-        return objectMapper.readTree(response.getBody());
+
+        var body = client.get().uri(url).exchange().returnResult(String.class).getResponseBody();
+
+        return objectMapper.readTree(body);
     }
 
     private void verifyProtobufSchemas(JsonNode schemas) {
