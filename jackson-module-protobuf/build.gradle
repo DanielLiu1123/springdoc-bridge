@@ -2,11 +2,13 @@ description = "Jackson Module for Protocol Buffers"
 
 dependencies {
     compileOnly("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
+    compileOnly("tools.jackson.core:jackson-databind:${jackson3Version}")
     api("com.google.protobuf:protobuf-java-util:${protobufVersion}")
 
     // Test dependencies
     testImplementation("org.springframework.boot:spring-boot-starter-test:${springBootVersion}")
     testImplementation("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
+    testImplementation("tools.jackson.core:jackson-databind:${jackson3Version}")
 }
 
 apply from: "${rootDir}/gradle/deploy.gradle"
