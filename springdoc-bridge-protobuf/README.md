@@ -115,12 +115,10 @@ Then, register it with custom options:
 @Configuration(proxyBeanMethods = false)
 public class ProtobufConfig {
     @Bean
-    public Jackson2ObjectMapperBuilderCustomizer protobufCustomizer() {
-        return builder -> builder.modules(
-            new ProtobufModule(ProtobufModule.Options.builder()
+    public ProtobufModule protobufModule() {
+        return new ProtobufModule(ProtobufModule.Options.builder()
                 .serializeEnumAsInt(true) // Serialize enums as integers
-                .build())
-        );
+                .build());
     }
 }
 ```
