@@ -51,7 +51,7 @@ import tools.jackson.databind.ser.Serializers;
  * @see JsonFormat
  * @see com.google.protobuf.Message
  * @see ProtocolMessageEnum
- * @since 0.4.1
+ * @since 0.5.0
  */
 @SuppressFBWarnings("SE_BAD_FIELD")
 public final class ProtobufModule extends SimpleModule {
