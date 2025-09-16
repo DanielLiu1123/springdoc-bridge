@@ -1,7 +1,6 @@
 package springdocbridge.protobuf;
 
 import com.google.protobuf.util.JsonFormat;
-import jacksonmodule.protobuf.ProtobufModule;
 import org.springdoc.core.configuration.SpringDocConfiguration;
 import org.springdoc.core.properties.SpringDocConfigProperties;
 import org.springdoc.core.providers.ObjectMapperProvider;
@@ -12,6 +11,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * Spring Boot auto-configuration for integrating Protocol Buffers (protobuf) support with SpringDoc OpenAPI.
@@ -62,14 +62,32 @@ public class SpringDocBridgeProtobufAutoConfiguration {
         this.springDocBridgeProtobufProperties = springDocBridgeProtobufProperties;
     }
 
-    @Bean
-    @ConditionalOnMissingBean
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnClass(com.fasterxml.jackson.databind.Module.class)
     @ConditionalOnProperty(
             prefix = SpringDocBridgeProtobufProperties.PREFIX,
             name = "register-protobuf-module",
             matchIfMissing = true)
-    public ProtobufModule jacksonProtobufModule() {
-        return new ProtobufModule();
+    static class Jackson2 {
+        @Bean
+        @ConditionalOnMissingBean
+        public jacksonmodule.protobuf.ProtobufModule jacksonProtobufModule() {
+            return new jacksonmodule.protobuf.ProtobufModule();
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnClass(tools.jackson.databind.JacksonModule.class)
+    @ConditionalOnProperty(
+            prefix = SpringDocBridgeProtobufProperties.PREFIX,
+            name = "register-protobuf-module",
+            matchIfMissing = true)
+    static class Jackson3 {
+        @Bean
+        @ConditionalOnMissingBean
+        public jacksonmodule.protobuf.v3.ProtobufModule jackson3ProtobufModule() {
+            return new jacksonmodule.protobuf.v3.ProtobufModule();
+        }
     }
 
     /**

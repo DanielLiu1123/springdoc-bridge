@@ -2,6 +2,8 @@
 
 **Jackson Module Protobuf** provides comprehensive Jackson serialization and deserialization support for [Protocol Buffers](https://protobuf.dev/) messages and enums, following the official [Protobuf JSON Mapping](https://protobuf.dev/programming-guides/json/) specification.
 
+**Supports both Jackson 2.x and Jackson 3.x**!
+
 ## 🎯 Features
 
 - **🔄 Bidirectional Conversion**: Serialize protobuf to JSON and deserialize JSON to protobuf
@@ -34,12 +36,15 @@ implementation "io.github.danielliu1123:jackson-module-protobuf:${jacksonModuleP
 ### Basic Usage
 
 ```java
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jacksonmodule.protobuf.ProtobufModule;
+import com.fasterxml.jackson.databind.json.JsonMapper; // Jackson 2.x
+import jacksonmodule.protobuf.ProtobufModule; // Jackson 2.x
+// import tools.jackson.databind.json.JsonMapper; // Jackson 3.x
+// import jacksonmodule.protobuf.v3.ProtobufModule; // Jackson 3.x
 
-// Register the module with ObjectMapper
-ObjectMapper mapper = new ObjectMapper();
-mapper.registerModule(new ProtobufModule());
+// Register the module with JsonMapper
+JsonMapper mapper = JsonMapper.builder()
+    .addModule(new ProtobufModule())
+    .build();
 
 // Serialize protobuf message to JSON
 User user = User.newBuilder()
@@ -62,7 +67,10 @@ User restored = mapper.readValue(json, User.class);
 
 ```java
 import com.google.protobuf.util.JsonFormat;
-import jacksonmodule.protobuf.ProtobufModule;
+import com.fasterxml.jackson.databind.json.JsonMapper; // Jackson 2.x
+import jacksonmodule.protobuf.ProtobufModule; // Jackson 2.x
+// import tools.jackson.databind.json.JsonMapper; // Jackson 3.x
+// import jacksonmodule.protobuf.v3.ProtobufModule; // Jackson 3.x
 
 // Create custom options
 ProtobufModule.Options options = ProtobufModule.Options.builder()
@@ -75,8 +83,9 @@ ProtobufModule.Options options = ProtobufModule.Options.builder()
     .build();
 
 // Register module with custom options
-ObjectMapper mapper = new ObjectMapper();
-mapper.registerModule(new ProtobufModule(options));
+JsonMapper mapper = JsonMapper.builder()
+    .addModule(new ProtobufModule(options))
+    .build();
 ```
 
 ### Spring Boot Integration
@@ -86,8 +95,8 @@ mapper.registerModule(new ProtobufModule(options));
 public class JacksonConfig {
 
     @Bean
-    public Jackson2ObjectMapperBuilderCustomizer protobufCustomizer() {
-        return builder -> builder.modules(new ProtobufModule());
+    public ProtobufModule jacksonProtobufModule() {
+        return new ProtobufModule();
     }
 }
 ```

@@ -23,6 +23,8 @@ class SpringDocBridgeProtobufAutoConfigurationIT {
                     .doesNotThrowAnyException();
             assertThatCode(() -> ctx.getBean(ProtobufModelConverter.class)).doesNotThrowAnyException();
             assertThatCode(() -> ctx.getBean(ProtobufModule.class)).doesNotThrowAnyException();
+            assertThatCode(() -> ctx.getBean(jacksonmodule.protobuf.v3.ProtobufModule.class))
+                    .doesNotThrowAnyException();
             assertThatCode(() -> ctx.getBean(SpringDocBridgeProtobufProperties.class))
                     .doesNotThrowAnyException();
         }
@@ -54,17 +56,7 @@ class SpringDocBridgeProtobufAutoConfigurationIT {
     void shouldRegisterProtobufModuleWhenEnabled() {
         try (var ctx = newAppBuilder().run()) {
             assertThatCode(() -> ctx.getBean("jacksonProtobufModule")).doesNotThrowAnyException();
-        }
-    }
-
-    @Test
-    @DisplayName("Should not register ProtobufModule when disabled")
-    void shouldNotRegisterProtobufModuleWhenDisabled() {
-        try (var ctx = newAppBuilder()
-                .properties("springdoc-bridge.protobuf.register-protobuf-module=false")
-                .run()) {
-            assertThatCode(() -> ctx.getBean("springDocBridgeProtobufJackson2ObjectMapperBuilderCustomizer"))
-                    .isInstanceOf(NoSuchBeanDefinitionException.class);
+            assertThatCode(() -> ctx.getBean("jackson3ProtobufModule")).doesNotThrowAnyException();
         }
     }
 

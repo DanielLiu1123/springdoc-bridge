@@ -112,10 +112,13 @@ springdoc-bridge:
 Then, register it with custom options:
 
 ```java
+import jacksonmodule.protobuf.ProtobufModule; // For Jackson 2.x
+// import jacksonmodule.protobuf.v3.ProtobufModule; // For Jackson 3.x
+
 @Configuration(proxyBeanMethods = false)
 public class ProtobufConfig {
     @Bean
-    public ProtobufModule protobufModule() {
+    public ProtobufModule jacksonProtobufModule() {
         return new ProtobufModule(ProtobufModule.Options.builder()
                 .serializeEnumAsInt(true) // Serialize enums as integers
                 .build());

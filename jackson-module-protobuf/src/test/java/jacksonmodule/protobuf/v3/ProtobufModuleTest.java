@@ -1,10 +1,8 @@
-package jacksonmodule.protobuf;
+package jacksonmodule.protobuf.v3;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.DoubleValue;
 import com.google.protobuf.Duration;
@@ -18,7 +16,6 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -28,8 +25,10 @@ import pet.v1.Owner;
 import pet.v1.Pet;
 import pet.v1.PetStatus;
 import pet.v1.PetType;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
-@DisplayName("ProtobufModule Tests")
+@DisplayName("ProtobufModule Tests (Jackson 3)")
 class ProtobufModuleTest {
 
     private JsonMapper jsonMapper;
@@ -490,7 +489,8 @@ class ProtobufModuleTest {
         @DisplayName("Should fail without ProtobufModule for protobuf types")
         void shouldFailWithoutProtobufModuleForProtobufTypes() {
             // Arrange
-            ObjectMapper mapperWithoutModule = new ObjectMapper();
+            ObjectMapper mapperWithoutModule =
+                    tools.jackson.databind.json.JsonMapper.builder().build();
             Pet pet = Pet.newBuilder()
                     .setId("fail-test")
                     .setName("Should Fail")
@@ -504,12 +504,10 @@ class ProtobufModuleTest {
         }
     }
 
-    @SneakyThrows
     private String writeValueAsString(Object value) {
         return jsonMapper.writeValueAsString(value);
     }
 
-    @SneakyThrows
     private <T> T readValue(String json, Class<T> clazz) {
         return jsonMapper.readValue(json, clazz);
     }
