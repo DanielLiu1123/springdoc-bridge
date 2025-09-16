@@ -17,7 +17,7 @@ Springdoc Bridge fills this gap by providing format-specific modules that ensure
 
 | Format               | Module                                                     | Status          | Description               |
 |----------------------|------------------------------------------------------------|-----------------|---------------------------|
-| **Protocol Buffers** | [`springdoc-bridge-protobuf`](./springdoc-bridge-protobuf) | ✅ **Available** | Complete protobuf support |
+| **Protocol Buffers** | [`springdoc-bridge-protobuf`](./springdoc-bridge-protobuf) | ✅ **Available** | Complete protobuf support with Jackson 2.x & 3.x |
 
 ## 📄 License
 

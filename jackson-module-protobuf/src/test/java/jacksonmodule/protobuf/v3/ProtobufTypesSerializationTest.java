@@ -1,8 +1,7 @@
-package jacksonmodule.protobuf;
+package jacksonmodule.protobuf.v3;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.protobuf.Any;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.BytesValue;
@@ -26,7 +25,6 @@ import com.google.protobuf.Value;
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.Timestamps;
 import java.time.Instant;
-import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -34,9 +32,10 @@ import org.junit.jupiter.api.Test;
 import pet.v1.Pet;
 import pet.v1.PetStatus;
 import pet.v1.PetType;
+import tools.jackson.databind.json.JsonMapper;
 import types.v1.TypesTest;
 
-@DisplayName("Protobuf Types Serialization and Deserialization Tests")
+@DisplayName("Protobuf Types Serialization and Deserialization Tests (Jackson 3)")
 class ProtobufTypesSerializationTest {
 
     private JsonMapper jsonMapper;
@@ -58,7 +57,9 @@ class ProtobufTypesSerializationTest {
         var options =
                 ProtobufModule.Options.builder().printer(printer).parser(parser).build();
 
-        jsonMapper = JsonMapper.builder().addModule(new ProtobufModule(options)).build();
+        jsonMapper = tools.jackson.databind.json.JsonMapper.builder()
+                .addModule(new ProtobufModule(options))
+                .build();
     }
 
     @Nested
@@ -305,16 +306,6 @@ class ProtobufTypesSerializationTest {
         }
     }
 
-    @SneakyThrows
-    private String writeValueAsString(Object value) {
-        return jsonMapper.writeValueAsString(value);
-    }
-
-    @SneakyThrows
-    private <T> T readValue(String json, Class<T> clazz) {
-        return jsonMapper.readValue(json, clazz);
-    }
-
     @Nested
     @DisplayName("Complex Types Tests")
     class ComplexTypesTests {
@@ -551,5 +542,13 @@ class ProtobufTypesSerializationTest {
             assertThat(json).contains("\"emptyField\":{}");
             assertThat(json).contains("\"fieldMask\":\"user.name,user.email\"");
         }
+    }
+
+    private String writeValueAsString(Object value) {
+        return jsonMapper.writeValueAsString(value);
+    }
+
+    private <T> T readValue(String json, Class<T> clazz) {
+        return jsonMapper.readValue(json, clazz);
     }
 }

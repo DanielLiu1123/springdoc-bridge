@@ -1,0 +1,82 @@
+package jacksonmodule.protobuf.v3;
+
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Message;
+import com.google.protobuf.MessageOrBuilder;
+import com.google.protobuf.NullValue;
+import com.google.protobuf.Value;
+import com.google.protobuf.util.JsonFormat;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
+
+/**
+ * Protobuf message deserializer, use {@link JsonFormat#parser()} to deserialize protobuf message.
+ *
+ * @param <T> protobuf message type
+ */
+final class ProtobufMessageDeserializer<T extends MessageOrBuilder> extends ValueDeserializer<T> {
+
+    private final ProtobufModule.Options options;
+    private final Message defaultInstance;
+
+    public ProtobufMessageDeserializer(Class<T> clazz, ProtobufModule.Options options) {
+        this.options = options;
+        this.defaultInstance = getDefaultInstance(clazz);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public T deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
+        var treeNode = p.readValueAsTree();
+
+        String json = treeNode.toString();
+
+        var builder = defaultInstance.toBuilder();
+
+        try {
+            options.parser().merge(json, builder);
+        } catch (InvalidProtocolBufferException e) {
+            throw new IllegalStateException("Failed to deserialize protobuf message", e);
+        }
+
+        return (T) builder.build();
+    }
+
+    @Override
+    public Object getNullValue(tools.jackson.databind.DeserializationContext ctxt) {
+        var clazz = defaultInstance.getClass();
+        if (Value.class.isAssignableFrom(clazz)) {
+            return Value.newBuilder().setNullValue(NullValue.NULL_VALUE).build();
+        }
+        return super.getNullValue(ctxt);
+    }
+
+    /**
+     * Gets the default instance of a protobuf message class using reflection.
+     * This method caches the default instance to avoid repeated reflection calls during deserialization.
+     *
+     * @param clazz the protobuf message class
+     * @return the default instance of the message
+     * @throws IllegalArgumentException if the class doesn't have a getDefaultInstance method or if invocation fails
+     */
+    private static Message getDefaultInstance(Class<?> clazz) {
+        try {
+            Method getDefaultInstanceMethod = clazz.getMethod("getDefaultInstance");
+            Object result = getDefaultInstanceMethod.invoke(null);
+            if (result instanceof Message message) {
+                return message;
+            } else {
+                throw new IllegalArgumentException(
+                        "getDefaultInstance() did not return a Message instance for class " + clazz);
+            }
+        } catch (NoSuchMethodException e) {
+            throw new IllegalArgumentException("No getDefaultInstance method found in class " + clazz, e);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new IllegalArgumentException("Failed to invoke getDefaultInstance method for class " + clazz, e);
+        }
+    }
+}
