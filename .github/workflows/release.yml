@@ -6,7 +6,6 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
     steps:
       - name: Check out the repo
         uses: actions/checkout@v5

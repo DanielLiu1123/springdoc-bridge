@@ -13,7 +13,6 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
       - name: Check out the repo
         uses: actions/checkout@v5
