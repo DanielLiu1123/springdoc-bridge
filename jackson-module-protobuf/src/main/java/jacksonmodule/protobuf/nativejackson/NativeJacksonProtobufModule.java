@@ -44,29 +44,32 @@ import lombok.Builder;
  * @author Freeman
  * @since 0.1.0
  */
-public class NativeJacksonProtobufModule extends SimpleModule {
+@SuppressFBWarnings("SE_BAD_FIELD")
+public final class NativeJacksonProtobufModule extends SimpleModule {
 
-    private static final String MODULE_NAME = "NativeJacksonProtobufModule";
-
+    /**
+     * The configuration options for this module.
+     */
     private final Options options;
+
     private final JsonSerializer<MessageOrBuilder> messageSerializer;
     private final JsonSerializer<?> enumSerializer;
 
     /**
-     * Creates a new module with default options.
+     * Creates a new NativeJacksonProtobufModule with default options.
+     *
+     * @see Options#DEFAULT
      */
     public NativeJacksonProtobufModule() {
-        this(Options.defaults());
+        this(Options.DEFAULT);
     }
 
     /**
-     * Creates a new module with the specified options.
+     * Creates a new NativeJacksonProtobufModule with the specified options.
      *
-     * @param options the configuration options
+     * @param options the configuration options for JSON serialization and deserialization
      */
-    @SuppressFBWarnings("EI_EXPOSE_REP2")
     public NativeJacksonProtobufModule(Options options) {
-        super(MODULE_NAME);
         this.options = options;
         this.messageSerializer = new NativeProtobufMessageSerializer<>(options);
         this.enumSerializer = new NativeProtobufEnumSerializer(options);
@@ -114,62 +117,15 @@ public class NativeJacksonProtobufModule extends SimpleModule {
     }
 
     /**
-     * Configuration options for the native Jackson protobuf module.
-     *
      * @param serializeEnumAsInt whether to serialize protobuf enums as integers (default: false)
-     * @param ignoringUnknownFields whether to ignore unknown fields during deserialization (default: true)
-     * @param includingDefaultValueFields whether to include fields with default values during serialization (default: true)
-     * @param preservingProtoFieldNames whether to preserve original proto field names instead of converting to camelCase (default: false)
      */
     @Builder(toBuilder = true)
-    public record Options(
-            boolean serializeEnumAsInt,
-            boolean ignoringUnknownFields,
-            boolean includingDefaultValueFields,
-            boolean preservingProtoFieldNames) {
+    public record Options(boolean serializeEnumAsInt) {
 
         /**
-         * Compact constructor for Options record that initializes default values.
-         *
-         * @param serializeEnumAsInt whether to serialize protobuf enums as integers
-         * @param ignoringUnknownFields whether to ignore unknown fields during deserialization
-         * @param includingDefaultValueFields whether to include fields with default values during serialization
-         * @param preservingProtoFieldNames whether to preserve original proto field names
+         * Default options instance with serializeEnumAsInt set to false.
          */
-        public Options {
-            // Default values are handled by the builder defaults
-        }
-
-        /**
-         * Creates default options.
-         *
-         * @return default options instance
-         */
-        public static Options defaults() {
-            return Options.builder()
-                    .serializeEnumAsInt(false)
-                    .ignoringUnknownFields(true)
-                    .includingDefaultValueFields(true)
-                    .preservingProtoFieldNames(false)
-                    .build();
-        }
-
-        /**
-         * Creates options with enum serialization as integers.
-         *
-         * @return options with enum serialization as integers
-         */
-        public static Options withEnumAsInt() {
-            return defaults().toBuilder().serializeEnumAsInt(true).build();
-        }
-
-        /**
-         * Creates options that preserve proto field names.
-         *
-         * @return options that preserve proto field names
-         */
-        public static Options withPreservedFieldNames() {
-            return defaults().toBuilder().preservingProtoFieldNames(true).build();
-        }
+        public static final Options DEFAULT =
+                Options.builder().serializeEnumAsInt(false).build();
     }
 }

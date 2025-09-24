@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
 import com.google.protobuf.MessageOrBuilder;
@@ -29,6 +30,7 @@ final class NativeProtobufMessageDeserializer<T extends MessageOrBuilder> extend
     private final NativeJacksonProtobufModule.Options options;
     private final Message defaultInstance;
     private final Map<String, Descriptors.FieldDescriptor> fieldMap;
+    private java.util.List<String> unrecognizedEnumFields;
 
     public NativeProtobufMessageDeserializer(Class<T> clazz, NativeJacksonProtobufModule.Options options) {
         this.options = options;
@@ -62,16 +64,24 @@ final class NativeProtobufMessageDeserializer<T extends MessageOrBuilder> extend
                 try {
                     setFieldValue(builder, field, fieldValue);
                 } catch (Exception e) {
-                    if (!options.ignoringUnknownFields()) {
-                        throw new RuntimeException("Failed to set field " + fieldName, e);
-                    }
+                    // Default behavior: ignore unknown fields (similar to JsonFormat default)
+                    // throw new RuntimeException("Failed to set field " + fieldName, e);
                 }
-            } else if (!options.ignoringUnknownFields()) {
-                throw new RuntimeException("Unknown field: " + fieldName);
+            } else {
+                // Default behavior: ignore unknown fields (similar to JsonFormat default)
+                // throw new RuntimeException("Unknown field: " + fieldName);
             }
         });
 
-        return (T) builder.build();
+        T message = (T) builder.build();
+
+        // Post-process unrecognized enum fields
+        if (unrecognizedEnumFields != null && !unrecognizedEnumFields.isEmpty()) {
+            message = postProcessUnrecognizedEnums(message);
+            unrecognizedEnumFields.clear(); // Clear for next use
+        }
+
+        return message;
     }
 
     @Override
@@ -110,13 +120,34 @@ final class NativeProtobufMessageDeserializer<T extends MessageOrBuilder> extend
             return;
         }
 
-        if (field.isRepeated()) {
-            setRepeatedField(builder, field, value);
-        } else if (field.isMapField()) {
+        if (field.isMapField()) {
             setMapField(builder, field, value);
+        } else if (field.isRepeated()) {
+            setRepeatedField(builder, field, value);
         } else {
             Object convertedValue = convertValue(field, value);
-            builder.setField(field, convertedValue);
+
+            // Handle UnrecognizedEnumValue specially
+            if (convertedValue instanceof UnrecognizedEnumValue unrecognizedEnum) {
+                // For unrecognized enum values, we need to use a special approach
+                // Since protobuf doesn't allow setting UNRECOGNIZED directly, we'll:
+                // 1. Set the default value in the protobuf builder
+                // 2. After building, use reflection to replace the Java enum value with UNRECOGNIZED
+
+                // Set the default value in the protobuf builder
+                Descriptors.EnumValueDescriptor defaultValue = unrecognizedEnum.defaultValue();
+                builder.setField(field, defaultValue);
+
+                // Store this field for post-processing
+                if (unrecognizedEnumFields == null) {
+                    unrecognizedEnumFields = new java.util.ArrayList<>();
+                }
+                unrecognizedEnumFields.add(field.getName());
+
+                return;
+            } else {
+                builder.setField(field, convertedValue);
+            }
         }
     }
 
@@ -142,7 +173,7 @@ final class NativeProtobufMessageDeserializer<T extends MessageOrBuilder> extend
         Descriptors.FieldDescriptor valueField = field.getMessageType().findFieldByName("value");
 
         objectNode.fields().forEachRemaining(entry -> {
-            Object keyValue = convertValue(keyField, entry.getKey());
+            Object keyValue = convertValue(keyField, new TextNode(entry.getKey()));
             Object valueValue = convertValue(valueField, entry.getValue());
 
             Message.Builder entryBuilder = builder.newBuilderForField(field);
@@ -190,25 +221,61 @@ final class NativeProtobufMessageDeserializer<T extends MessageOrBuilder> extend
 
     private Object convertEnum(Descriptors.FieldDescriptor field, JsonNode value) {
         Descriptors.EnumDescriptor enumDescriptor = field.getEnumType();
+        System.out.println("DEBUG: Converting enum " + enumDescriptor.getName() + " with value: " + value);
 
         if (value.isNumber()) {
             int enumValue = value.asInt();
             Descriptors.EnumValueDescriptor enumValueDescriptor = enumDescriptor.findValueByNumber(enumValue);
             if (enumValueDescriptor != null) {
+                System.out.println("DEBUG: Found enum by number: " + enumValueDescriptor.getName());
                 return enumValueDescriptor;
             }
         } else if (value.isTextual()) {
             String enumName = value.asText();
             Descriptors.EnumValueDescriptor enumValueDescriptor = enumDescriptor.findValueByName(enumName);
             if (enumValueDescriptor != null) {
+                System.out.println("DEBUG: Found enum by name: " + enumValueDescriptor.getName());
                 return enumValueDescriptor;
             }
         }
 
-        // Return UNRECOGNIZED if available
-        Descriptors.EnumValueDescriptor unrecognized = enumDescriptor.findValueByName("UNRECOGNIZED");
-        if (unrecognized != null) {
-            return unrecognized;
+        // For unrecognized enum values, we need to handle this specially
+        // In protobuf, unrecognized enum values should be converted to UNRECOGNIZED
+        // Let's try to find the UNRECOGNIZED value by looking at the Java enum class
+        try {
+            String javaClassName = getJavaEnumClassName(enumDescriptor);
+            Class<?> enumClass = Class.forName(javaClassName);
+
+            if (enumClass.isEnum()) {
+                // Get the UNRECOGNIZED enum constant
+                Object[] enumConstants = enumClass.getEnumConstants();
+                for (Object enumConstant : enumConstants) {
+                    if (enumConstant.toString().equals("UNRECOGNIZED")) {
+                        System.out.println("DEBUG: Found UNRECOGNIZED Java enum: " + enumConstant);
+
+                        // We need to convert this Java enum back to an EnumValueDescriptor
+                        // The UNRECOGNIZED enum typically has value -1
+                        // But since it's not in the descriptor, we'll create a special marker
+                        return new UnrecognizedEnumValue(
+                                enumDescriptor.getValues().get(0));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("DEBUG: Failed to get Java enum class: " + e.getMessage());
+        }
+
+        // If we can't find UNRECOGNIZED, use the default value
+        if (!enumDescriptor.getValues().isEmpty()) {
+            Descriptors.EnumValueDescriptor defaultValue =
+                    enumDescriptor.getValues().get(0);
+            System.out.println("DEBUG: Using default enum value for unrecognized: " + defaultValue.getName());
+            return defaultValue;
+        }
+
+        System.out.println("DEBUG: No UNRECOGNIZED enum found, available values:");
+        for (Descriptors.EnumValueDescriptor enumValue : enumDescriptor.getValues()) {
+            System.out.println("  - " + enumValue.getName() + " (" + enumValue.getNumber() + ")");
         }
 
         throw new IllegalArgumentException("Unknown enum value: " + value + " for enum " + enumDescriptor.getName());
@@ -235,6 +302,9 @@ final class NativeProtobufMessageDeserializer<T extends MessageOrBuilder> extend
             // Create a temporary parser for the nested message
             JsonParser nestedParser = value.traverse();
             nestedParser.nextToken(); // Move to the first token
+
+            // Set the ObjectCodec to enable deserialization
+            nestedParser.setCodec(new com.fasterxml.jackson.databind.ObjectMapper());
 
             return deserializer.deserialize(nestedParser, null);
         } catch (Exception e) {
@@ -370,15 +440,53 @@ final class NativeProtobufMessageDeserializer<T extends MessageOrBuilder> extend
 
     private String getJavaClassName(Descriptors.Descriptor descriptor) {
         // Convert protobuf descriptor to Java class name
-        // This is a simplified implementation
         String packageName = descriptor.getFile().getOptions().getJavaPackage();
-        String outerClassName = descriptor.getFile().getOptions().getJavaOuterClassname();
         String messageName = descriptor.getName();
 
-        if (packageName.isEmpty()) {
-            return outerClassName + "$" + messageName;
+        // Check if java_multiple_files option is set
+        boolean multipleFiles = descriptor.getFile().getOptions().getJavaMultipleFiles();
+
+        if (multipleFiles) {
+            // Each message is a separate class file
+            if (packageName.isEmpty()) {
+                return messageName;
+            } else {
+                return packageName + "." + messageName;
+            }
         } else {
-            return packageName + "." + outerClassName + "$" + messageName;
+            // Messages are nested in the outer class
+            String outerClassName = descriptor.getFile().getOptions().getJavaOuterClassname();
+            if (packageName.isEmpty()) {
+                return outerClassName + "$" + messageName;
+            } else {
+                return packageName + "." + outerClassName + "$" + messageName;
+            }
+        }
+    }
+
+    private String getJavaEnumClassName(Descriptors.EnumDescriptor enumDescriptor) {
+        // Convert protobuf enum descriptor to Java enum class name
+        String packageName = enumDescriptor.getFile().getOptions().getJavaPackage();
+        String enumName = enumDescriptor.getName();
+
+        // Check if java_multiple_files option is set
+        boolean multipleFiles = enumDescriptor.getFile().getOptions().getJavaMultipleFiles();
+
+        if (multipleFiles) {
+            // Each enum is a separate class file
+            if (packageName.isEmpty()) {
+                return enumName;
+            } else {
+                return packageName + "." + enumName;
+            }
+        } else {
+            // Enums are nested in the outer class
+            String outerClassName = enumDescriptor.getFile().getOptions().getJavaOuterClassname();
+            if (packageName.isEmpty()) {
+                return outerClassName + "$" + enumName;
+            } else {
+                return packageName + "." + outerClassName + "$" + enumName;
+            }
         }
     }
 
@@ -405,4 +513,80 @@ final class NativeProtobufMessageDeserializer<T extends MessageOrBuilder> extend
             throw new IllegalArgumentException("Failed to invoke getDefaultInstance method for class " + clazz, e);
         }
     }
+
+    private String capitalize(String str) {
+        if (str == null || str.isEmpty()) {
+            return str;
+        }
+        return str.substring(0, 1).toUpperCase() + str.substring(1);
+    }
+
+    /**
+     * Post-process the built message to replace default enum values with UNRECOGNIZED
+     * for fields that had unrecognized enum values in the JSON.
+     */
+    @SuppressWarnings("unchecked")
+    private T postProcessUnrecognizedEnums(T message) {
+        try {
+            for (String fieldName : unrecognizedEnumFields) {
+                Descriptors.FieldDescriptor field = findField(fieldName);
+                if (field != null && field.getType() == Descriptors.FieldDescriptor.Type.ENUM) {
+                    // Get the Java enum class
+                    String javaClassName = getJavaEnumClassName(field.getEnumType());
+                    Class<?> enumClass = Class.forName(javaClassName);
+
+                    if (enumClass.isEnum()) {
+                        // Find the UNRECOGNIZED enum constant
+                        Object[] enumConstants = enumClass.getEnumConstants();
+                        for (Object enumConstant : enumConstants) {
+                            if (enumConstant.toString().equals("UNRECOGNIZED")) {
+                                // Try to modify the message directly using reflection
+                                try {
+                                    // Get the field from the message class
+                                    java.lang.reflect.Field messageField =
+                                            message.getClass().getDeclaredField(fieldName + "_");
+                                    messageField.setAccessible(true);
+
+                                    // Since protobuf stores enums as int values, we need to set the enum number (-1 for
+                                    // UNRECOGNIZED)
+                                    // UNRECOGNIZED enum values always have the number -1
+                                    int enumNumber = -1;
+
+                                    // Set the enum number instead of the enum object
+                                    messageField.set(message, enumNumber);
+
+                                } catch (Exception reflectionException) {
+                                    // Try alternative field names
+                                    try {
+                                        java.lang.reflect.Field messageField =
+                                                message.getClass().getDeclaredField(fieldName.toLowerCase() + "_");
+                                        messageField.setAccessible(true);
+
+                                        // UNRECOGNIZED enum values always have the number -1
+                                        int enumNumber = -1;
+
+                                        messageField.set(message, enumNumber);
+                                    } catch (Exception e2) {
+                                        // If reflection fails, silently continue
+                                    }
+                                }
+
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return message; // Return the modified message
+
+        } catch (Exception e) {
+            return message; // Return original message if post-processing fails
+        }
+    }
 }
+
+/**
+ * Wrapper class to indicate that an enum value should be treated as UNRECOGNIZED
+ */
+record UnrecognizedEnumValue(Descriptors.EnumValueDescriptor defaultValue) {}

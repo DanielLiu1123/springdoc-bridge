@@ -308,7 +308,9 @@ class NativeJacksonProtobufModuleTest {
         @Test
         void shouldSerializeEnumAsIntegerWhenConfigured() {
             // Arrange
-            var options = NativeJacksonProtobufModule.Options.withEnumAsInt();
+            var options = NativeJacksonProtobufModule.Options.builder()
+                    .serializeEnumAsInt(true)
+                    .build();
             var mapper = JsonMapper.builder()
                     .addModule(new NativeJacksonProtobufModule(options))
                     .build();
@@ -432,9 +434,6 @@ class NativeJacksonProtobufModuleTest {
             // Arrange
             var options = NativeJacksonProtobufModule.Options.builder()
                     .serializeEnumAsInt(true)
-                    .ignoringUnknownFields(false)
-                    .includingDefaultValueFields(false)
-                    .preservingProtoFieldNames(true)
                     .build();
             var module = new NativeJacksonProtobufModule(options);
             var mapper = JsonMapper.builder().addModule(module).build();

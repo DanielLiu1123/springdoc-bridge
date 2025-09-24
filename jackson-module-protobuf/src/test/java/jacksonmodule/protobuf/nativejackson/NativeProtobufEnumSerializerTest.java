@@ -34,7 +34,7 @@ class NativeProtobufEnumSerializerTest {
         @EnumSource(PetType.class)
         void shouldSerializeEnumAsStringByDefault(PetType petType) throws IOException {
             // Arrange
-            var options = NativeJacksonProtobufModule.Options.defaults();
+            var options = NativeJacksonProtobufModule.Options.DEFAULT;
             var serializer = new NativeProtobufEnumSerializer(options);
 
             // Act
@@ -52,7 +52,9 @@ class NativeProtobufEnumSerializerTest {
                 mode = EnumSource.Mode.EXCLUDE)
         void shouldSerializeEnumAsIntegerWhenConfigured(PetStatus petStatus) throws IOException {
             // Arrange
-            var options = NativeJacksonProtobufModule.Options.withEnumAsInt();
+            var options = NativeJacksonProtobufModule.Options.builder()
+                    .serializeEnumAsInt(true)
+                    .build();
             var serializer = new NativeProtobufEnumSerializer(options);
 
             // Act
@@ -66,7 +68,9 @@ class NativeProtobufEnumSerializerTest {
         @Test
         void shouldThrowExceptionWhenSerializingUnrecognizedEnumAsInteger() {
             // Arrange
-            var options = NativeJacksonProtobufModule.Options.withEnumAsInt();
+            var options = NativeJacksonProtobufModule.Options.builder()
+                    .serializeEnumAsInt(true)
+                    .build();
             var serializer = new NativeProtobufEnumSerializer(options);
 
             // Act & Assert
@@ -78,7 +82,7 @@ class NativeProtobufEnumSerializerTest {
         @Test
         void shouldSerializePetTypeAsString() throws IOException {
             // Arrange
-            var options = NativeJacksonProtobufModule.Options.defaults();
+            var options = NativeJacksonProtobufModule.Options.DEFAULT;
             var serializer = new NativeProtobufEnumSerializer(options);
             var petType = PetType.CAT;
 
@@ -93,7 +97,9 @@ class NativeProtobufEnumSerializerTest {
         @Test
         void shouldSerializePetTypeAsInteger() throws IOException {
             // Arrange
-            var options = NativeJacksonProtobufModule.Options.withEnumAsInt();
+            var options = NativeJacksonProtobufModule.Options.builder()
+                    .serializeEnumAsInt(true)
+                    .build();
             var serializer = new NativeProtobufEnumSerializer(options);
             var petType = PetType.CAT;
 
@@ -108,7 +114,7 @@ class NativeProtobufEnumSerializerTest {
         @Test
         void shouldSerializePetStatusAsString() throws IOException {
             // Arrange
-            var options = NativeJacksonProtobufModule.Options.defaults();
+            var options = NativeJacksonProtobufModule.Options.DEFAULT;
             var serializer = new NativeProtobufEnumSerializer(options);
             var petStatus = PetStatus.PENDING;
 
@@ -123,7 +129,9 @@ class NativeProtobufEnumSerializerTest {
         @Test
         void shouldSerializePetStatusAsInteger() throws IOException {
             // Arrange
-            var options = NativeJacksonProtobufModule.Options.withEnumAsInt();
+            var options = NativeJacksonProtobufModule.Options.builder()
+                    .serializeEnumAsInt(true)
+                    .build();
             var serializer = new NativeProtobufEnumSerializer(options);
             var petStatus = PetStatus.PENDING;
 
@@ -138,7 +146,7 @@ class NativeProtobufEnumSerializerTest {
         @Test
         void shouldSerializeUnspecifiedEnumAsString() throws IOException {
             // Arrange
-            var options = NativeJacksonProtobufModule.Options.defaults();
+            var options = NativeJacksonProtobufModule.Options.DEFAULT;
             var serializer = new NativeProtobufEnumSerializer(options);
             var petType = PetType.PET_TYPE_UNSPECIFIED;
 
@@ -153,7 +161,9 @@ class NativeProtobufEnumSerializerTest {
         @Test
         void shouldSerializeUnspecifiedEnumAsInteger() throws IOException {
             // Arrange
-            var options = NativeJacksonProtobufModule.Options.withEnumAsInt();
+            var options = NativeJacksonProtobufModule.Options.builder()
+                    .serializeEnumAsInt(true)
+                    .build();
             var serializer = new NativeProtobufEnumSerializer(options);
             var petType = PetType.PET_TYPE_UNSPECIFIED;
 

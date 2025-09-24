@@ -49,8 +49,8 @@ final class NativeProtobufMessageSerializer<T extends MessageOrBuilder> extends 
             return true;
         }
 
-        // Include default values if configured to do so
-        return options.includingDefaultValueFields();
+        // Default behavior: include default value fields (similar to JsonFormat default)
+        return true;
     }
 
     private void writeField(
@@ -60,9 +60,11 @@ final class NativeProtobufMessageSerializer<T extends MessageOrBuilder> extends 
         gen.writeFieldName(fieldName);
 
         if (field.isRepeated()) {
-            writeRepeatedField(gen, serializers, message, field);
-        } else if (field.isMapField()) {
-            writeMapField(gen, serializers, message, field);
+            if (field.isMapField()) {
+                writeMapField(gen, serializers, message, field);
+            } else {
+                writeRepeatedField(gen, serializers, message, field);
+            }
         } else {
             Object value = message.getField(field);
             writeFieldValue(gen, serializers, field, value);
@@ -70,9 +72,7 @@ final class NativeProtobufMessageSerializer<T extends MessageOrBuilder> extends 
     }
 
     private String getFieldName(Descriptors.FieldDescriptor field) {
-        if (options.preservingProtoFieldNames()) {
-            return field.getName();
-        }
+        // Default behavior: use JSON names (camelCase) instead of proto field names (snake_case)
         return field.getJsonName();
     }
 
@@ -132,11 +132,20 @@ final class NativeProtobufMessageSerializer<T extends MessageOrBuilder> extends 
                 gen.writeString(java.util.Base64.getEncoder().encodeToString(bytes.toByteArray()));
             }
             case ENUM -> {
-                ProtocolMessageEnum enumValue = (ProtocolMessageEnum) value;
-                if (options.serializeEnumAsInt()) {
-                    gen.writeNumber(enumValue.getNumber());
+                if (value instanceof Descriptors.EnumValueDescriptor enumDescriptor) {
+                    if (options.serializeEnumAsInt()) {
+                        gen.writeNumber(enumDescriptor.getNumber());
+                    } else {
+                        gen.writeString(enumDescriptor.getName());
+                    }
+                } else if (value instanceof ProtocolMessageEnum enumValue) {
+                    if (options.serializeEnumAsInt()) {
+                        gen.writeNumber(enumValue.getNumber());
+                    } else {
+                        gen.writeString(((Enum<?>) enumValue).name());
+                    }
                 } else {
-                    gen.writeString(((Enum<?>) enumValue).name());
+                    throw new IllegalArgumentException("Unsupported enum type: " + value.getClass());
                 }
             }
             case MESSAGE -> {
