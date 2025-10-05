@@ -5,7 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.example.schema.naming.v1.SchemaNamingTestMessage;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.protobuf.Any;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
@@ -406,10 +406,10 @@ class ProtobufModelConverterTest {
     private static ModelConverterContext getModelConverterContext(
             SchemaNamingStrategy schemaNamingStrategy, boolean useFqn) {
 
-        var objectMapper = new ObjectMapper();
+        var jsonMapper = JsonMapper.builder().build();
 
         var objectMapperProvider = mock(ObjectMapperProvider.class);
-        when(objectMapperProvider.jsonMapper()).thenReturn(objectMapper);
+        when(objectMapperProvider.jsonMapper()).thenReturn(jsonMapper);
 
         var modelConverters = ModelConverters.getInstance(true);
         modelConverters.addConverter(new ProtobufModelConverter(
