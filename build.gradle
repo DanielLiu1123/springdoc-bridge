@@ -15,6 +15,12 @@ allprojects {
         options.addStringOption('Xdoclint:none', '-quiet')
     }
 
+    configurations {
+        optional
+        compileOnly.extendsFrom optional
+        testImplementation.extendsFrom optional
+    }
+
     repositories {
         mavenLocal()
         mavenCentral()

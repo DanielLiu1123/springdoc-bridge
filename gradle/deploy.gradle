@@ -24,7 +24,7 @@ publishing {
             pom {
                 url = "${githubUrl}"
                 name = project.name
-                description = project.description ?: ""
+                description = project.description ?: project.name
                 licenses {
                     license {
                         name = 'MIT License'
@@ -43,6 +43,22 @@ publishing {
                     connection = "scm:git:git://${githubUrl.substring(8)}.git"
                     developerConnection = "scm:git:ssh@${githubUrl.substring(8)}.git"
                     url = "${githubUrl}"
+                }
+                withXml {
+                    def dependenciesNode = asNode().dependencies[0]
+                    if (dependenciesNode) {
+                        // Add optional configuration dependencies as optional
+                        project.configurations.optional.allDependencies.each { dep ->
+                            if (dep.group && dep.name && dep.version) {
+                                def dependencyNode = dependenciesNode.appendNode('dependency')
+                                dependencyNode.appendNode('groupId', dep.group)
+                                dependencyNode.appendNode('artifactId', dep.name)
+                                dependencyNode.appendNode('version', dep.version)
+                                dependencyNode.appendNode('scope', 'compile')
+                                dependencyNode.appendNode('optional', 'true')
+                            }
+                        }
+                    }
                 }
             }
         }
