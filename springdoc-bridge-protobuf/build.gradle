@@ -10,6 +10,9 @@ dependencies {
 
     // Test dependencies
     testImplementation("org.springframework.boot:spring-boot-starter-test:${springBootVersion}")
+    testImplementation("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
+    testImplementation("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
+    testImplementation("tools.jackson.core:jackson-databind:${jackson3Version}")
     testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${springDocsVersion}")
 }
 

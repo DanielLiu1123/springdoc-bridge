@@ -6,6 +6,8 @@ dependencies {
     optional("tools.jackson.core:jackson-databind:${jackson3Version}")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test:${springBootVersion}")
+    testImplementation("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
+    testImplementation("tools.jackson.core:jackson-databind:${jackson3Version}")
 }
 
 apply from: "${rootDir}/gradle/deploy.gradle"
