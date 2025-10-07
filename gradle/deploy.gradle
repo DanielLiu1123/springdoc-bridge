@@ -45,18 +45,22 @@ publishing {
                     url = "${githubUrl}"
                 }
                 withXml {
-                    def dependenciesNode = asNode().dependencies[0]
-                    if (dependenciesNode) {
-                        // Add optional configuration dependencies as optional
-                        project.configurations.optional.allDependencies.each { dep ->
-                            if (dep.group && dep.name && dep.version) {
-                                def dependencyNode = dependenciesNode.appendNode('dependency')
-                                dependencyNode.appendNode('groupId', dep.group)
-                                dependencyNode.appendNode('artifactId', dep.name)
-                                dependencyNode.appendNode('version', dep.version)
-                                dependencyNode.appendNode('scope', 'compile')
-                                dependencyNode.appendNode('optional', 'true')
-                            }
+                    // Generate optional dependencies for optional configuration
+                    def dependencies = asNode().dependencies[0] ?: asNode().appendNode("dependencies")
+
+                    def resolvedDeps = project.configurations.optional.resolvedConfiguration.resolvedArtifacts
+                            .stream()
+                            .map(e -> e.moduleVersion.id)
+                            .collect(java.util.stream.Collectors.toMap(dep -> dep.group + ":" + dep.name, dep -> dep.version));
+
+                    for (dep in project.configurations.optional.allDependencies) {
+                        def version = resolvedDeps[dep.group + ":" + dep.name]
+                        if (dep.group && dep.name && version) {
+                            def dependency = dependencies.appendNode("dependency")
+                            dependency.appendNode("groupId", dep.group)
+                            dependency.appendNode("artifactId", dep.name)
+                            dependency.appendNode("version", version)
+                            dependency.appendNode("optional", "true")
                         }
                     }
                 }
