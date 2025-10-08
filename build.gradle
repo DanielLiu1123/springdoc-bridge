@@ -79,5 +79,3 @@ allprojects {
         excludeFilter = file("${rootDir}/config/spotbugs/exclude.xml")
     }
 }
-
-apply from: "${rootDir}/gradle/jreleaser.gradle"
