@@ -39,6 +39,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -245,38 +246,45 @@ public class ProtobufModelConverter implements ModelConverter {
 
     @SuppressWarnings("rawtypes")
     private static Map<Class<?>, Schema> createSpecialTypeSchemas() {
-        return Map.ofEntries(
-                // Wrapper types
-                Map.entry(BoolValue.class, new BooleanSchema()),
-                Map.entry(Int32Value.class, new IntegerSchema().format("int32")),
-                Map.entry(UInt32Value.class, new IntegerSchema().format("int32").minimum(BigDecimal.ZERO)),
-                Map.entry(Int64Value.class, new IntegerSchema().format("int64")),
-                Map.entry(UInt64Value.class, new IntegerSchema().format("int64").minimum(BigDecimal.ZERO)),
-                Map.entry(FloatValue.class, new NumberSchema().format("float")),
-                Map.entry(DoubleValue.class, new NumberSchema().format("double")),
-                Map.entry(StringValue.class, new StringSchema()),
-                Map.entry(BytesValue.class, new StringSchema().format("byte")),
+        var result = new HashMap<Class<?>, Schema>();
 
-                // JSON types
-                Map.entry(Struct.class, new ObjectSchema().additionalProperties(true)),
-                Map.entry(Value.class, new JsonSchema()),
-                Map.entry(ListValue.class, new ArraySchema().items(new JsonSchema())),
-                Map.entry(NullValue.class, new JsonSchema().typesItem("null")),
+        // Wrapper types
+        result.put(BoolValue.class, new BooleanSchema());
+        result.put(Int32Value.class, new IntegerSchema().format("int32"));
+        result.put(UInt32Value.class, new IntegerSchema().format("int32").minimum(BigDecimal.ZERO));
+        result.put(Int64Value.class, new IntegerSchema().format("int64"));
+        result.put(UInt64Value.class, new IntegerSchema().format("int64").minimum(BigDecimal.ZERO));
+        result.put(FloatValue.class, new NumberSchema().format("float"));
+        result.put(DoubleValue.class, new NumberSchema().format("double"));
+        result.put(StringValue.class, new StringSchema());
+        result.put(BytesValue.class, new StringSchema().format("byte"));
 
-                // Special types
+        // JSON types
+        result.put(Struct.class, new ObjectSchema().additionalProperties(true));
+        result.put(Value.class, new JsonSchema());
+        result.put(ListValue.class, new ArraySchema().items(new JsonSchema()));
+        // For compatibility reasons, do not use the typesItem(..) method.
+        // It’s too new, and many services have not yet upgraded Swagger to 2.2.30.
+        var nullSchema = new JsonSchema();
+        nullSchema.addType("null");
+        result.put(NullValue.class, nullSchema);
 
-                // Timestamp: RFC 3339 string
-                Map.entry(Timestamp.class, new StringSchema().format("date-time")),
-                // Duration: string with "s" suffix
-                // example: "1s", "1.5s", "-1s", "-1.5s"
-                Map.entry(Duration.class, new StringSchema().pattern("^-?\\d+(\\.\\d+)?s$")),
-                // FieldMask: string
-                // example: "user.name,user.email"
-                Map.entry(FieldMask.class, new StringSchema()),
-                // ByteString: base64 string
-                Map.entry(ByteString.class, new StringSchema().format("byte")),
-                // ProtocolStringList: repeated string
-                Map.entry(ProtocolStringList.class, new ArraySchema().items(new StringSchema())));
+        // Special types
+
+        // Timestamp: RFC 3339 string
+        result.put(Timestamp.class, new StringSchema().format("date-time"));
+        // Duration: string with "s" suffix
+        // example: "1s", "1.5s", "-1s", "-1.5s"
+        result.put(Duration.class, new StringSchema().pattern("^-?\\d+(\\.\\d+)?s$"));
+        // FieldMask: string
+        // example: "user.name,user.email"
+        result.put(FieldMask.class, new StringSchema());
+        // ByteString: base64 string
+        result.put(ByteString.class, new StringSchema().format("byte"));
+        // ProtocolStringList: repeated string
+        result.put(ProtocolStringList.class, new ArraySchema().items(new StringSchema()));
+
+        return result;
     }
 
     /**

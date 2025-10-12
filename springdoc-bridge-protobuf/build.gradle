@@ -3,16 +3,17 @@ description = "SpringDoc Bridge for Protocol Buffers"
 dependencies {
     api(project(":jackson-module-protobuf"))
 
-    compileOnly("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
-    compileOnly("tools.jackson.core:jackson-databind:${jackson3Version}")
-    compileOnly("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
-    compileOnly("org.springdoc:springdoc-openapi-starter-common:${springDocsVersion}")
+    optional("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
+    optional("tools.jackson.core:jackson-databind:${jackson3Version}")
+    optional("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
+    optional("org.springdoc:springdoc-openapi-starter-common:${springDocsVersion}")
 
     // Test dependencies
     testImplementation("org.springframework.boot:spring-boot-starter-test:${springBootVersion}")
     testImplementation("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
-    testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${springDocsVersion}")
+    testImplementation("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
     testImplementation("tools.jackson.core:jackson-databind:${jackson3Version}")
+    testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${springDocsVersion}")
 }
 
 apply from: "${rootDir}/gradle/protobuf.gradle"

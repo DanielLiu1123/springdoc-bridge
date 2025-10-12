@@ -3,7 +3,6 @@ package jacksonmodule.protobuf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.DoubleValue;
@@ -490,7 +489,7 @@ class ProtobufModuleTest {
         @DisplayName("Should fail without ProtobufModule for protobuf types")
         void shouldFailWithoutProtobufModuleForProtobufTypes() {
             // Arrange
-            ObjectMapper mapperWithoutModule = new ObjectMapper();
+            JsonMapper mapperWithoutModule = JsonMapper.builder().build();
             Pet pet = Pet.newBuilder()
                     .setId("fail-test")
                     .setName("Should Fail")

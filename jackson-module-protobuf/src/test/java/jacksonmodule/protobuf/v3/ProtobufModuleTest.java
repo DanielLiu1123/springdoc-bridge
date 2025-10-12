@@ -25,7 +25,6 @@ import pet.v1.Owner;
 import pet.v1.Pet;
 import pet.v1.PetStatus;
 import pet.v1.PetType;
-import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 @DisplayName("ProtobufModule Tests (Jackson 3)")
@@ -489,8 +488,7 @@ class ProtobufModuleTest {
         @DisplayName("Should fail without ProtobufModule for protobuf types")
         void shouldFailWithoutProtobufModuleForProtobufTypes() {
             // Arrange
-            ObjectMapper mapperWithoutModule =
-                    tools.jackson.databind.json.JsonMapper.builder().build();
+            JsonMapper mapperWithoutModule = JsonMapper.builder().build();
             Pet pet = Pet.newBuilder()
                     .setId("fail-test")
                     .setName("Should Fail")

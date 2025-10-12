@@ -33,8 +33,7 @@ import tools.jackson.databind.ser.Serializers;
  * <p> Usage Example:
  * <pre>{@code
  * // Register the module with ObjectMapper
- * ObjectMapper mapper = new ObjectMapper();
- * mapper.registerModule(new ProtobufModule());
+ * JsonMapper mapper = JsonMapper.builder().addModule(new ProtobufModule()).build();
  *
  * // Serialize protobuf message to JSON
  * MyProtoMessage message = MyProtoMessage.newBuilder()

@@ -2,9 +2,6 @@ package example;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -13,6 +10,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.test.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.client.RestTestClient;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Integration tests for ProtobufApp OpenAPI documentation generation
@@ -34,7 +33,7 @@ class ProtobufAppIT {
     private final RestTestClient client = RestTestClient.bindToServer().build();
 
     @Autowired
-    private ObjectMapper objectMapper;
+    private JsonMapper jsonMapper;
 
     @Nested
     @DisplayName("API Documentation Generation Tests")
@@ -66,7 +65,7 @@ class ProtobufAppIT {
 
         @Test
         @DisplayName("Generated API docs match expected content")
-        void generatedApiDocsMatchExpected() throws IOException {
+        void generatedApiDocsMatchExpected() {
             // Given
             String url = "http://localhost:" + port + "/v3/api-docs";
 
@@ -74,13 +73,13 @@ class ProtobufAppIT {
             var resp = client.get().uri(url).exchange();
 
             JsonNode actualApiDocs =
-                    objectMapper.readTree(resp.returnResult(String.class).getResponseBody());
+                    jsonMapper.readTree(resp.returnResult(String.class).getResponseBody());
 
             // Then
             resp.expectStatus().isEqualTo(HttpStatus.OK);
 
             // Verify basic structure
-            assertThat(actualApiDocs.get("openapi").asText()).isEqualTo("3.1.0");
+            assertThat(actualApiDocs.get("openapi").asString()).isEqualTo("3.1.0");
             assertThat(actualApiDocs.has("info")).isTrue();
             assertThat(actualApiDocs.has("paths")).isTrue();
             assertThat(actualApiDocs.has("components")).isTrue();
@@ -107,14 +106,14 @@ class ProtobufAppIT {
 
         @Test
         @DisplayName("User protobuf message schema is generated correctly")
-        void userProtobufMessageSchemaIsCorrect() throws IOException {
+        void userProtobufMessageSchemaIsCorrect() {
             // Given
             JsonNode apiDocs = getApiDocs();
             JsonNode userSchema = apiDocs.get("components").get("schemas").get("user.v1.User");
 
             // Then
             assertThat(userSchema).isNotNull();
-            assertThat(userSchema.get("type").asText()).isEqualTo("object");
+            assertThat(userSchema.get("type").asString()).isEqualTo("object");
 
             JsonNode properties = userSchema.get("properties");
             assertThat(properties).isNotNull();
@@ -127,36 +126,36 @@ class ProtobufAppIT {
             // Verify enum fields use $ref references
             JsonNode genderField = properties.get("gender");
             assertThat(genderField.has("$ref")).isTrue();
-            assertThat(genderField.get("$ref").asText()).isEqualTo("#/components/schemas/user.v1.User.Gender");
+            assertThat(genderField.get("$ref").asString()).isEqualTo("#/components/schemas/user.v1.User.Gender");
 
             // Verify the referenced enum schema exists and has correct values
             JsonNode genderSchema = apiDocs.get("components").get("schemas").get("user.v1.User.Gender");
             assertThat(genderSchema).isNotNull();
-            assertThat(genderSchema.get("type").asText()).isEqualTo("string");
+            assertThat(genderSchema.get("type").asString()).isEqualTo("string");
             assertThat(genderSchema.has("enum")).isTrue();
             assertThat(genderSchema.get("enum").toString()).contains("GENDER_UNSPECIFIED", "MALE", "FEMALE", "OTHER");
 
             // Verify nested message references
             JsonNode addressField = properties.get("address");
             assertThat(addressField.has("$ref")).isTrue();
-            assertThat(addressField.get("$ref").asText()).isEqualTo("#/components/schemas/user.v1.User.Address");
+            assertThat(addressField.get("$ref").asString()).isEqualTo("#/components/schemas/user.v1.User.Address");
 
             // Verify timestamp fields
             JsonNode createdAtField = properties.get("createdAt");
-            assertThat(createdAtField.get("type").asText()).isEqualTo("string");
-            assertThat(createdAtField.get("format").asText()).isEqualTo("date-time");
+            assertThat(createdAtField.get("type").asString()).isEqualTo("string");
+            assertThat(createdAtField.get("format").asString()).isEqualTo("date-time");
         }
 
         @Test
         @DisplayName("Nested message schema is generated correctly")
-        void nestedMessageSchemaIsCorrect() throws IOException {
+        void nestedMessageSchemaIsCorrect() {
             // Given
             JsonNode apiDocs = getApiDocs();
             JsonNode addressSchema = apiDocs.get("components").get("schemas").get("user.v1.User.Address");
 
             // Then
             assertThat(addressSchema).isNotNull();
-            assertThat(addressSchema.get("type").asText()).isEqualTo("object");
+            assertThat(addressSchema.get("type").asString()).isEqualTo("object");
 
             JsonNode properties = addressSchema.get("properties");
             assertThat(properties).isNotNull();
@@ -167,19 +166,19 @@ class ProtobufAppIT {
             // Verify nested enums use $ref references
             JsonNode typeField = properties.get("type");
             assertThat(typeField.has("$ref")).isTrue();
-            assertThat(typeField.get("$ref").asText()).isEqualTo("#/components/schemas/user.v1.User.AddressType");
+            assertThat(typeField.get("$ref").asString()).isEqualTo("#/components/schemas/user.v1.User.AddressType");
 
             // Verify the referenced enum schema exists
             JsonNode addressTypeSchema =
                     apiDocs.get("components").get("schemas").get("user.v1.User.AddressType");
             assertThat(addressTypeSchema).isNotNull();
-            assertThat(addressTypeSchema.get("type").asText()).isEqualTo("string");
+            assertThat(addressTypeSchema.get("type").asString()).isEqualTo("string");
             assertThat(addressTypeSchema.has("enum")).isTrue();
         }
 
         @Test
         @DisplayName("Array fields should not have properties")
-        void arrayFieldsShouldNotHaveProperties() throws IOException {
+        void arrayFieldsShouldNotHaveProperties() {
             // Given
             JsonNode apiDocs = getApiDocs();
             JsonNode userSchema = apiDocs.get("components").get("schemas").get("user.v1.User");
@@ -192,21 +191,21 @@ class ProtobufAppIT {
             // Verify tags field (repeated string) is a proper array without properties
             JsonNode tagsField = properties.get("tags");
             assertThat(tagsField).isNotNull();
-            assertThat(tagsField.get("type").asText()).isEqualTo("array");
-            assertThat(tagsField.get("items").get("type").asText()).isEqualTo("string");
+            assertThat(tagsField.get("type").asString()).isEqualTo("array");
+            assertThat(tagsField.get("items").get("type").asString()).isEqualTo("string");
             assertThat(tagsField.has("properties")).isFalse(); // This should not exist for arrays
 
             // Verify addresses field (repeated message) is a proper array without properties
             JsonNode addressesField = properties.get("addresses");
             assertThat(addressesField).isNotNull();
-            assertThat(addressesField.get("type").asText()).isEqualTo("array");
+            assertThat(addressesField.get("type").asString()).isEqualTo("array");
             assertThat(addressesField.get("items").has("$ref")).isTrue();
             assertThat(addressesField.has("properties")).isFalse(); // This should not exist for arrays
 
             // Verify phoneNumbers field (repeated message) is a proper array without properties
             JsonNode phoneNumbersField = properties.get("phoneNumbers");
             assertThat(phoneNumbersField).isNotNull();
-            assertThat(phoneNumbersField.get("type").asText()).isEqualTo("array");
+            assertThat(phoneNumbersField.get("type").asString()).isEqualTo("array");
             assertThat(phoneNumbersField.get("items").has("$ref")).isTrue();
             assertThat(phoneNumbersField.has("properties")).isFalse(); // This should not exist for arrays
         }
@@ -218,7 +217,7 @@ class ProtobufAppIT {
 
         @Test
         @DisplayName("Well-known types schema is generated correctly")
-        void wellKnownTypesSchemaIsCorrect() throws IOException {
+        void wellKnownTypesSchemaIsCorrect() {
             // Given
             JsonNode apiDocs = getApiDocs();
             JsonNode wellKnownSchema = apiDocs.get("components").get("schemas").get("wellknown.v1.WellKnownTypesTest");
@@ -231,36 +230,36 @@ class ProtobufAppIT {
 
             // Verify Timestamp fields
             JsonNode timestampField = properties.get("timestampField");
-            assertThat(timestampField.get("type").asText()).isEqualTo("string");
-            assertThat(timestampField.get("format").asText()).isEqualTo("date-time");
+            assertThat(timestampField.get("type").asString()).isEqualTo("string");
+            assertThat(timestampField.get("format").asString()).isEqualTo("date-time");
 
             // Verify Duration fields
             JsonNode durationField = properties.get("durationField");
-            assertThat(durationField.get("type").asText()).isEqualTo("string");
+            assertThat(durationField.get("type").asString()).isEqualTo("string");
             assertThat(durationField.has("pattern")).isTrue();
 
             // Verify wrapper types
             JsonNode int64Wrapper = properties.get("int64Wrapper");
-            assertThat(int64Wrapper.get("type").asText()).isEqualTo("integer");
-            assertThat(int64Wrapper.get("format").asText()).isEqualTo("int64");
+            assertThat(int64Wrapper.get("type").asString()).isEqualTo("integer");
+            assertThat(int64Wrapper.get("format").asString()).isEqualTo("int64");
 
             JsonNode int32Wrapper = properties.get("int32Wrapper");
-            assertThat(int32Wrapper.get("type").asText()).isEqualTo("integer");
+            assertThat(int32Wrapper.get("type").asString()).isEqualTo("integer");
             // Remove format assertion since implementation doesn't set format for Int32Value
 
             // Verify Struct fields
             JsonNode structField = properties.get("structField");
-            assertThat(structField.get("type").asText()).isEqualTo("object");
+            assertThat(structField.get("type").asString()).isEqualTo("object");
             assertThat(structField.has("additionalProperties")).isTrue();
 
             // Verify Any fields
             JsonNode anyField = properties.get("anyField");
-            assertThat(anyField.get("$ref").asText()).isEqualTo("#/components/schemas/google.protobuf.Any");
+            assertThat(anyField.get("$ref").asString()).isEqualTo("#/components/schemas/google.protobuf.Any");
         }
 
         @Test
         @DisplayName("Scalar types schema is generated correctly")
-        void scalarTypesSchemaIsCorrect() throws IOException {
+        void scalarTypesSchemaIsCorrect() {
             // Given
             JsonNode apiDocs = getApiDocs();
             JsonNode scalarSchema = apiDocs.get("components").get("schemas").get("wellknown.v1.ScalarTypesTest");
@@ -273,17 +272,17 @@ class ProtobufAppIT {
 
             // Verify 64-bit integers are mapped to strings
             JsonNode int64Field = properties.get("int64Field");
-            assertThat(int64Field.get("type").asText()).isIn("integer", "string");
+            assertThat(int64Field.get("type").asString()).isIn("integer", "string");
 
             // Verify 32-bit integers
             JsonNode int32Field = properties.get("int32Field");
-            assertThat(int32Field.get("type").asText()).isEqualTo("integer");
-            assertThat(int32Field.get("format").asText()).isEqualTo("int32");
+            assertThat(int32Field.get("type").asString()).isEqualTo("integer");
+            assertThat(int32Field.get("format").asString()).isEqualTo("int32");
 
             // Verify bytes fields
             JsonNode bytesField = properties.get("bytesField");
-            assertThat(bytesField.get("type").asText()).isEqualTo("string");
-            assertThat(bytesField.get("format").asText()).isEqualTo("byte");
+            assertThat(bytesField.get("type").asString()).isEqualTo("string");
+            assertThat(bytesField.get("format").asString()).isEqualTo("byte");
         }
     }
 
@@ -293,7 +292,7 @@ class ProtobufAppIT {
 
         @Test
         @DisplayName("Java POJO with protobuf fields schema is generated correctly")
-        void javaPojoWithProtobufFieldsSchemaIsCorrect() throws IOException {
+        void javaPojoWithProtobufFieldsSchemaIsCorrect() {
             // Given
             JsonNode apiDocs = getApiDocs();
             JsonNode userWrapperSchema =
@@ -313,17 +312,17 @@ class ProtobufAppIT {
             // Verify protobuf field references
             JsonNode userField = properties.get("user");
             assertThat(userField.has("$ref")).isTrue();
-            assertThat(userField.get("$ref").asText()).isEqualTo("#/components/schemas/user.v1.User");
+            assertThat(userField.get("$ref").asString()).isEqualTo("#/components/schemas/user.v1.User");
 
             // Verify Java LocalDateTime mapping
             JsonNode createdAtField = properties.get("createdAt");
-            assertThat(createdAtField.get("type").asText()).isEqualTo("string");
-            assertThat(createdAtField.get("format").asText()).isEqualTo("date-time");
+            assertThat(createdAtField.get("type").asString()).isEqualTo("string");
+            assertThat(createdAtField.get("format").asString()).isEqualTo("date-time");
         }
 
         @Test
         @DisplayName("Complex nested structure schema is generated correctly")
-        void complexNestedStructureSchemaIsCorrect() throws IOException {
+        void complexNestedStructureSchemaIsCorrect() {
             // Given
             JsonNode apiDocs = getApiDocs();
             JsonNode nestedSchema =
@@ -343,23 +342,23 @@ class ProtobufAppIT {
 
             // Verify array types
             JsonNode contactInfoList = properties.get("contactInfoList");
-            assertThat(contactInfoList.get("type").asText()).isEqualTo("array");
+            assertThat(contactInfoList.get("type").asString()).isEqualTo("array");
             assertThat(contactInfoList.get("items").has("$ref")).isTrue();
 
             // Verify Map types
             JsonNode locationMap = properties.get("locationMap");
-            assertThat(locationMap.get("type").asText()).isEqualTo("object");
+            assertThat(locationMap.get("type").asString()).isEqualTo("object");
             assertThat(locationMap.get("additionalProperties").has("$ref")).isTrue();
         }
     }
 
     // Helper methods
-    private JsonNode getApiDocs() throws IOException {
+    private JsonNode getApiDocs() {
         String url = "http://localhost:" + port + "/v3/api-docs";
 
         var body = client.get().uri(url).exchange().returnResult(String.class).getResponseBody();
 
-        return objectMapper.readTree(body);
+        return jsonMapper.readTree(body);
     }
 
     private void verifyProtobufSchemas(JsonNode schemas) {
