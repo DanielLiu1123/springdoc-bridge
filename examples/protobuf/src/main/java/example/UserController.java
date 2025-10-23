@@ -12,6 +12,7 @@ import com.example.user.v1.SearchUsersRequest;
 import com.example.user.v1.SearchUsersResponse;
 import com.example.user.v1.UpdateUserResponse;
 import com.example.user.v1.User;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -102,7 +103,7 @@ public class UserController {
             summary = "Test Java Bean with nested protobuf User",
             description = "Tests Java POJO containing protobuf User message")
     public UserWrapper createUserWrapper(@RequestBody UserWrapper userWrapper) {
-        return UserWrapper.builder().build();
+        return userWrapper.toBuilder().build();
     }
 
     @PostMapping("/test/contact-info")
@@ -209,6 +210,7 @@ public class UserController {
     public record UserWrapper(
             String wrapperName,
             User user,
+            @Schema(type = "integer", format = "int32") @JsonFormat(shape = JsonFormat.Shape.NUMBER) User.Gender gender,
             LocalDateTime createdAt,
             boolean isActive,
             String description,
