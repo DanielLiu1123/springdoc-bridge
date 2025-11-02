@@ -23,7 +23,6 @@ jobs:
           distribution: 'corretto'
 
       - name: Upgrade Gradle
-        id: upgrade_gradle
         run: |
           latest_version=$(curl -s 'https://services.gradle.org/versions/current' | grep '"version"' | sed 's/.*"version" *: *"\([^"]*\)".*/\1/')
           echo "Latest Gradle version: $latest_version"
