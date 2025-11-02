@@ -51,54 +51,54 @@ implementation "io.github.danielliu1123:springdoc-bridge-protobuf:${springdocBri
 
 1. **Define Protobuf Messages**
 
-```protobuf
-syntax = "proto3";
-
-package user.v1;
-
-import "google/protobuf/timestamp.proto";
-
-option java_multiple_files = true;
-option java_package = "com.example.user.v1";
-
-message User {
-  string user_id = 1;
-  string username = 2;
-  string email = 3;
-  UserStatus status = 4;
-  google.protobuf.Timestamp created_at = 5;
-  repeated string tags = 6;
-
-  enum UserStatus {
-    USER_STATUS_UNSPECIFIED = 0;
-    ACTIVE = 1;
-    INACTIVE = 2;
-    SUSPENDED = 3;
-  }
-}
-```
+    ```protobuf
+    syntax = "proto3";
+    
+    package user.v1;
+    
+    import "google/protobuf/timestamp.proto";
+    
+    option java_multiple_files = true;
+    option java_package = "com.example.user.v1";
+    
+    message User {
+      string user_id = 1;
+      string username = 2;
+      string email = 3;
+      UserStatus status = 4;
+      google.protobuf.Timestamp created_at = 5;
+      repeated string tags = 6;
+    
+      enum UserStatus {
+        USER_STATUS_UNSPECIFIED = 0;
+        ACTIVE = 1;
+        INACTIVE = 2;
+        SUSPENDED = 3;
+      }
+    }
+    ```
 
 2. **Create REST Controller**
 
-```java
-
-@RestController
-@RequestMapping("/api/v1/users")
-public class UserController {
-    @GetMapping("/{userId}")
-    public User getUser(@PathVariable("userId") String userId) {
-        // ...
-        return User.getDefaultInstance();
+    ```java
+    
+    @RestController
+    @RequestMapping("/api/v1/users")
+    public class UserController {
+        @GetMapping("/{userId}")
+        public User getUser(@PathVariable("userId") String userId) {
+            // ...
+            return User.getDefaultInstance();
+        }
     }
-}
-```
+    ```
 
 3. **Access Documentation**
 
-Start your application and visit:
-
-- **Swagger UI**: `http://localhost:8080/swagger-ui.html`
-- **OpenAPI JSON**: `http://localhost:8080/v3/api-docs`
+    Start your application and visit:
+    
+    - **Swagger UI**: `http://localhost:8080/swagger-ui.html`
+    - **OpenAPI JSON**: `http://localhost:8080/v3/api-docs`
 
 ### Advanced Usage
 
