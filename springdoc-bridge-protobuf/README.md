@@ -27,13 +27,13 @@ using protobuf messages and enums.
 </dependency>
 <dependency>
 <groupId>org.springdoc</groupId>
-<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-<version>${springdoc.version}</version>
+    <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+    <version>${springdoc.version}</version>
 </dependency>
 <dependency>
 <groupId>io.github.danielliu1123</groupId>
-<artifactId>springdoc-bridge-protobuf</artifactId>
-<version>${springdoc-bridge.version}</version>
+    <artifactId>springdoc-bridge-protobuf</artifactId>
+    <version>${springdoc-bridge.version}</version>
 </dependency>
 ```
 
