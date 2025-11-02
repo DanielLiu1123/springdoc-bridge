@@ -1,19 +1,19 @@
 # Jackson Module - Protocol Buffers
 
-**Jackson Module Protobuf** provides comprehensive Jackson serialization and deserialization support for [Protocol Buffers](https://protobuf.dev/) messages and enums, following the official [Protobuf JSON Mapping](https://protobuf.dev/programming-guides/json/) specification.
+Jackson Module Protobuf provides Jackson serialization and deserialization support for [Protocol Buffers](https://protobuf.dev/) messages and enums, following the official [Protobuf JSON Mapping](https://protobuf.dev/programming-guides/json/) specification.
 
-**Supports both Jackson 2.x and Jackson 3.x**!
+Supports both Jackson 2.x and Jackson 3.x.
 
-## 🎯 Features
+## Features
 
-- **🔄 Bidirectional Conversion**: Serialize protobuf to JSON and deserialize JSON to protobuf
-- **📋 Well-Known Types**: Full support for `Timestamp`, `Duration`, `Any`, `Struct`, `Value`, etc.
-- **🏷️ Enum Support**: Configurable enum serialization (string names or integer values)
-- **⚙️ Flexible Configuration**: Customizable `JsonFormat.Parser` and `JsonFormat.Printer`
-- **🚀 High Performance**: Optimized serialization with caching for better performance
-- **📖 Spec Compliant**: Follows Google's official protobuf JSON mapping rules
+- Bidirectional conversion between protobuf and JSON
+- Full support for well-known types (`Timestamp`, `Duration`, `Any`, `Struct`, `Value`, etc.)
+- Configurable enum serialization (string names or integer values)
+- Customizable `JsonFormat.Parser` and `JsonFormat.Printer`
+- Optimized serialization with caching
+- Compliant with Google's official protobuf JSON mapping specification
 
-## 🚀 Installation
+## Installation
 
 ### Maven
 
@@ -31,7 +31,7 @@
 implementation "io.github.danielliu1123:jackson-module-protobuf:${jacksonModuleProtobufVersion}"
 ```
 
-## 📖 Usage Examples
+## Usage Examples
 
 ### Basic Usage
 
@@ -101,13 +101,13 @@ public class JacksonConfig {
 }
 ```
 
-## 🧪 Testing
+## Testing
 
 ```bash
 ./gradlew :jackson-module-protobuf:test
 ```
 
-## 🔗 Related Links
+## Related Links
 
 - [Jackson Documentation](https://github.com/FasterXML/jackson-docs)
 - [Protocol Buffers](https://protobuf.dev/)

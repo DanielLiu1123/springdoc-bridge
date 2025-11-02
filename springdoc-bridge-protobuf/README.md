@@ -2,35 +2,38 @@
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.danielliu1123/springdoc-bridge-protobuf)](https://central.sonatype.com/artifact/io.github.danielliu1123/springdoc-bridge-protobuf)
 
-**SpringDoc Bridge Protobuf** provides seamless integration between [SpringDoc OpenAPI](https://springdoc.org/) and [Protocol Buffers](https://protobuf.dev/), enabling automatic generation of accurate OpenAPI documentation for APIs that use protobuf messages and enums.
+SpringDoc Bridge Protobuf provides integration between [SpringDoc OpenAPI](https://springdoc.org/)
+and [Protocol Buffers](https://protobuf.dev/), enabling automatic generation of accurate OpenAPI documentation for APIs
+using protobuf messages and enums.
 
-## 🎯 Features
+## Features
 
-- **🔄 Automatic Schema Generation**: Converts protobuf messages to OpenAPI schemas
-- **📋 Well-Known Types Support**: Full support for `Timestamp`, `Duration`, `Any`, `Struct`, etc.
-- **🏷️ Enum Handling**: Proper enum documentation with value mappings
-- **⚙️ Flexible Configuration**: Customizable schema naming and serialization options
-- **🚀 Zero Configuration**: Works out-of-the-box with Spring Boot auto-configuration
-- **📖 JSON Mapping Compliance**: Follows official [Protobuf JSON Mapping](https://protobuf.dev/programming-guides/json/) specification
+- Automatic conversion of protobuf messages to OpenAPI schemas
+- Full support for well-known types (`Timestamp`, `Duration`, `Any`, `Struct`, etc.)
+- Proper enum documentation with value mappings
+- Customizable schema naming and serialization options
+- Works out-of-the-box with Spring Boot auto-configuration
+- Compliant with official [Protobuf JSON Mapping](https://protobuf.dev/programming-guides/json/) specification
 
-## 🚀 Installation
+## Installation
 
 ### Maven
 
 ```xml
+
 <dependency>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-web</artifactId>
 </dependency>
 <dependency>
-    <groupId>org.springdoc</groupId>
-    <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-    <version>${springdoc.version}</version>
+<groupId>org.springdoc</groupId>
+<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+<version>${springdoc.version}</version>
 </dependency>
 <dependency>
-    <groupId>io.github.danielliu1123</groupId>
-    <artifactId>springdoc-bridge-protobuf</artifactId>
-    <version>${springdoc-bridge.version}</version>
+<groupId>io.github.danielliu1123</groupId>
+<artifactId>springdoc-bridge-protobuf</artifactId>
+<version>${springdoc-bridge.version}</version>
 </dependency>
 ```
 
@@ -42,7 +45,7 @@ implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVer
 implementation "io.github.danielliu1123:springdoc-bridge-protobuf:${springdocBridgeVersion}"
 ```
 
-## 📖 Usage Examples
+## Usage Examples
 
 ### Basic Setup
 
@@ -65,7 +68,7 @@ message User {
   UserStatus status = 4;
   google.protobuf.Timestamp created_at = 5;
   repeated string tags = 6;
-  
+
   enum UserStatus {
     USER_STATUS_UNSPECIFIED = 0;
     ACTIVE = 1;
@@ -78,6 +81,7 @@ message User {
 2. **Create REST Controller**
 
 ```java
+
 @RestController
 @RequestMapping("/api/v1/users")
 public class UserController {
@@ -92,6 +96,7 @@ public class UserController {
 3. **Access Documentation**
 
 Start your application and visit:
+
 - **Swagger UI**: `http://localhost:8080/swagger-ui.html`
 - **OpenAPI JSON**: `http://localhost:8080/v3/api-docs`
 
@@ -99,7 +104,9 @@ Start your application and visit:
 
 #### Custom Protobuf Serialization/Deserialization
 
-`ProtobufModule` is [auto-registered by default](../springdoc-bridge-protobuf/src/main/java/springdocbridge/protobuf/SpringDocBridgeProtobufAutoConfiguration.java), but you can customize it if needed.
+`ProtobufModule`
+is [auto-registered by default](../springdoc-bridge-protobuf/src/main/java/springdocbridge/protobuf/SpringDocBridgeProtobufAutoConfiguration.java),
+but you can customize it if needed.
 
 First, disable auto-registration:
 
@@ -126,9 +133,10 @@ public class ProtobufConfig {
 }
 ```
 
-For more details, refer to [jackson-module-protobuf#custom-configuration](../jackson-module-protobuf/README.md#custom-configuration)
+For more details, refer
+to [jackson-module-protobuf#custom-configuration](../jackson-module-protobuf/README.md#custom-configuration)
 
-## ⚙️ Configuration
+## Configuration
 
 ### Configuration Properties
 
@@ -143,12 +151,12 @@ For more details, refer to [jackson-module-protobuf#custom-configuration](../jac
 - **`SPRINGDOC`**: Uses SpringDoc's default naming (respects `springdoc.use-fqn` setting)
 - **`PROTOBUF`**: Uses protobuf's full type name (e.g., `user.v1.User`)
 
-## 🧪 Testing
+## Testing
 
 ```bash
 ./gradlew :springdoc-bridge-protobuf:test
 ```
 
-## 📚 Examples
+## Examples
 
-- **[Protobuf Example](../examples/protobuf)**: Full Spring Boot application with protobuf integration
+- [Protobuf Example](../examples/protobuf) - Full Spring Boot application with protobuf integration
