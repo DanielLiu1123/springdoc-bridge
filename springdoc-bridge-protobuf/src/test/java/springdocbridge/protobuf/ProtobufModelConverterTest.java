@@ -39,6 +39,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.ResolvableType;
 import springdocbridge.protobuf.SpringDocBridgeProtobufProperties.SchemaNamingStrategy;
 import types.v1.DeprecatedTestMessage;
+import types.v1.EditionTestMessage;
 import types.v1.EnumTestMessage;
 import types.v1.MapTestMessage;
 import types.v1.OneofTestMessage;
@@ -225,6 +226,18 @@ class ProtobufModelConverterTest {
 
             // Verify the properties exist
             assertThat(schema.getProperties()).containsKeys("referralCode", "promoCode", "source1", "source2");
+        }
+
+        @Test
+        @DisplayName("Should mark edition 2023/2024 IMPLICIT field_presence as required")
+        void shouldMarkEditionImplicitFieldPresenceAsRequired() {
+            var schema = resolve(EditionTestMessage.class);
+
+            // 'implicitField' has features.field_presence = IMPLICIT, should be required
+            assertThat(schema.getRequired()).contains("implicitField");
+
+            // 'explicitField' has default field_presence (EXPLICIT in edition 2024), should be optional
+            assertThat(schema.getRequired()).doesNotContain("explicitField");
         }
     }
 

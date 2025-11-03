@@ -153,10 +153,7 @@ public class ProtobufModelConverter implements ModelConverter {
 
             schema.addProperty(fieldName, fieldSchema);
 
-            // Fields should be marked as required only if they are:
-            // 1. Not proto3 optional
-            // 2. Not part of a oneof (oneof fields are always optional)
-            if (!field.toProto().getProto3Optional() && field.getContainingOneof() == null) {
+            if (!isOptional(field)) {
                 schema.addRequiredItem(fieldName);
             }
         }
@@ -166,6 +163,18 @@ public class ProtobufModelConverter implements ModelConverter {
 
         // Return a $ref to the registered schema
         return new Schema<>().$ref(ref);
+    }
+
+    private static boolean isOptional(Descriptors.FieldDescriptor field) {
+        // Proto3 optional fields and oneof fields are always optional
+        if (field.toProto().getProto3Optional() || field.getContainingOneof() != null) {
+            return true;
+        }
+        if (field.hasPresence()) {
+            // edition version default is EXPLICIT, which means fields have has_xxx() methods
+            return field.getFile().toProto().getSyntax().equals("editions");
+        }
+        return false;
     }
 
     @Nullable
