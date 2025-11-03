@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package types.v1;
+
+option java_multiple_files = true;
+option java_package = "types.v1";
+
+message OneofTestMessage {
+  string regular_field = 1;
+
+  // oneof fields should be optional
+  oneof method {
+    string referral_code = 2;
+    string promo_code = 3;
+  }
+
+  oneof Source {
+    NestedMessage source1 = 4;
+    NestedMessage source2 = 5;
+  }
+
+  message NestedMessage {
+    string value = 1;
+  }
+}

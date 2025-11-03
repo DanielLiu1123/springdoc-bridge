@@ -153,7 +153,10 @@ public class ProtobufModelConverter implements ModelConverter {
 
             schema.addProperty(fieldName, fieldSchema);
 
-            if (!field.toProto().getProto3Optional()) {
+            // Fields should be marked as required only if they are:
+            // 1. Not proto3 optional
+            // 2. Not part of a oneof (oneof fields are always optional)
+            if (!field.toProto().getProto3Optional() && field.getContainingOneof() == null) {
                 schema.addRequiredItem(fieldName);
             }
         }
