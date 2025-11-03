@@ -41,6 +41,7 @@ import springdocbridge.protobuf.SpringDocBridgeProtobufProperties.SchemaNamingSt
 import types.v1.DeprecatedTestMessage;
 import types.v1.EnumTestMessage;
 import types.v1.MapTestMessage;
+import types.v1.OneofTestMessage;
 import types.v1.OptionalTestMessage;
 import types.v1.RepeatedTestMessage;
 
@@ -211,6 +212,19 @@ class ProtobufModelConverterTest {
             var schema = resolve(OptionalTestMessage.class);
 
             assertThat(schema.getRequired()).containsExactlyInAnyOrder("requiredString", "requiredMessage");
+        }
+
+        @Test
+        @DisplayName("Should mark oneof fields as optional")
+        void shouldMarkOneofFieldsAsOptional() {
+            var schema = resolve(OneofTestMessage.class);
+
+            // oneof fields should NOT be in required list
+            var required = schema.getRequired();
+            assertThat(required).isNotNull().doesNotContain("referralCode", "promoCode", "source1", "source2");
+
+            // Verify the properties exist
+            assertThat(schema.getProperties()).containsKeys("referralCode", "promoCode", "source1", "source2");
         }
     }
 
