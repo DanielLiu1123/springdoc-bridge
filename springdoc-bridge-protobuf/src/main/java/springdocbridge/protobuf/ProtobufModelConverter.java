@@ -172,6 +172,7 @@ public class ProtobufModelConverter implements ModelConverter {
         }
         if (field.hasPresence()) {
             // edition version default is EXPLICIT, which means fields have has_xxx() methods
+            // Non-optional message type for proto3 considered as required
             return field.getFile().toProto().getSyntax().equals("editions");
         }
         return false;
