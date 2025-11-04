@@ -19,6 +19,8 @@ allprojects {
     configurations {
         optional
         compileOnly.extendsFrom optional
+        provided
+        compileOnly.extendsFrom provided
     }
 
     repositories {
