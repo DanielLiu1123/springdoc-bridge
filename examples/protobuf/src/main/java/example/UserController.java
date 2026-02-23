@@ -210,7 +210,10 @@ public class UserController {
     public record UserWrapper(
             String wrapperName,
             User user,
-            @Schema(type = "integer", format = "int32") @JsonFormat(shape = JsonFormat.Shape.NUMBER) User.Gender gender,
+
+            @Schema(type = "integer", format = "int32") @JsonFormat(shape = JsonFormat.Shape.NUMBER)
+            User.Gender gender,
+
             LocalDateTime createdAt,
             boolean isActive,
             String description,

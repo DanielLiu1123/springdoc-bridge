@@ -355,9 +355,7 @@ class ProtobufTypesSerializationTest {
             TypesTest deserializedTypesTest = readValue(json, TypesTest.class);
 
             // Assert
-            assertThat(json)
-                    .isEqualTo(
-                            """
+            assertThat(json).isEqualTo("""
                     {"anyField":{"@type":"type.googleapis.com/pet.v1.Pet","id":"any-test","name":"Any Test Pet","type":"DOG","status":"AVAILABLE","tags":[],"metadata":{},"previousAddresses":[]},"nullValueField":null}""");
             assertThat(deserializedTypesTest.getAnyField().unpack(Pet.class)).isEqualTo(pet);
         }
