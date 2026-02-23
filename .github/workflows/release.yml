@@ -38,9 +38,9 @@ jobs:
         env:
           MAVENCENTRAL_USERNAME: ${{ secrets.MAVENCENTRAL_USERNAME }}
           MAVENCENTRAL_PASSWORD: ${{ secrets.MAVENCENTRAL_PASSWORD }}
-          GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
           GPG_SECRET_KEY: ${{ secrets.GPG_SECRET_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           tag=${{ github.ref_name }}
-          ./gradlew publish jreleaserDeploy --no-daemon --stacktrace -Pversion=${tag#v}
+          ./gradlew clean publish --no-daemon --no-configuration-cache -Pversion=${tag#v}
+          ./gradlew deploy --no-daemon

@@ -4,7 +4,17 @@ plugins {
     id "com.github.spotbugs" version "${spotbugsVersion}" apply false
     // https://github.com/google/protobuf-gradle-plugin
     id "com.google.protobuf" version "+" apply false
-    id "org.jreleaser" version "${jReleaserVersion}" apply false
+    id "io.github.danielliu1123.deployer" version "${deployerVersion}"
+}
+
+deploy {
+    dirs = subprojects.stream()
+            .map(e -> e.layout.buildDirectory.dir("repo").get().getAsFile())
+            .filter(e -> e.exists())
+            .toList()
+    username = System.getenv("MAVENCENTRAL_USERNAME")
+    password = System.getenv("MAVENCENTRAL_PASSWORD")
+    publishingType = io.github.danielliu1123.deployer.PublishingType.WAIT_FOR_PUBLISHED
 }
 
 //allprojects { // uncomment this if you want to get IDE support, only for debugging purpose!
@@ -83,5 +93,3 @@ subprojects {
         excludeFilter = file("${rootDir}/config/spotbugs/exclude.xml")
     }
 }
-
-apply from: "${rootDir}/gradle/jreleaser.gradle"
