@@ -49,7 +49,7 @@ class ProtobufTypesSerializationTest {
 
         var printer = JsonFormat.printer()
                 .omittingInsignificantWhitespace()
-                .includingDefaultValueFields()
+                .alwaysPrintFieldsWithNoPresence()
                 .usingTypeRegistry(typeRegistry);
 
         var parser = JsonFormat.parser().ignoringUnknownFields().usingTypeRegistry(typeRegistry);
