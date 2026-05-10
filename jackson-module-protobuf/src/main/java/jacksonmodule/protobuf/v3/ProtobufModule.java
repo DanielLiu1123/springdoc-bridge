@@ -157,7 +157,13 @@ public final class ProtobufModule extends SimpleModule {
                 parser = JsonFormat.parser().ignoringUnknownFields();
             }
             if (printer == null) {
-                printer = JsonFormat.printer().omittingInsignificantWhitespace().includingDefaultValueFields();
+                printer = JsonFormat.printer().omittingInsignificantWhitespace();
+                if (hasMethod(printer.getClass(), "alwaysPrintFieldsWithNoPresence")) {
+                    printer = printer.alwaysPrintFieldsWithNoPresence();
+                } else if (hasMethod(printer.getClass(), "includingDefaultValueFields")) {
+                    // includingDefaultValueFields is deprecated
+                    printer = printer.includingDefaultValueFields();
+                }
                 if (serializeEnumAsInt) {
                     printer = printer.printingEnumsAsInts();
                 }
@@ -168,5 +174,14 @@ public final class ProtobufModule extends SimpleModule {
          * Default options instance with serializeEnumAsInt set to false and default parser/printer.
          */
         public static final Options DEFAULT = Options.builder().build();
+    }
+
+    private static boolean hasMethod(Class<?> clazz, String methodName, Class<?>... parameterTypes) {
+        try {
+            clazz.getMethod(methodName, parameterTypes);
+            return true;
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
     }
 }
