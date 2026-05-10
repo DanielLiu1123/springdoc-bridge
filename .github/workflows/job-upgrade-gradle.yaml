@@ -47,4 +47,4 @@ jobs:
           commit-message: "Update Gradle version to ${{ env.latest_version }}"
           title: "Update Gradle version to ${{ env.latest_version }}"
           body: ""
-          branch: upgrade-gradle-version-${{ env.latest_version }}
+          branch: upgrade-gradle-version
