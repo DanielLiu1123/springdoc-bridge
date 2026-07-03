@@ -47,6 +47,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import org.springdoc.core.providers.ObjectMapperProvider;
 import org.springframework.beans.BeanUtils;
+import springdocbridge.protobuf.SpringDocBridgeProtobufProperties.OneofBehavior;
 
 /**
  * OpenAPI model converter that provides specialized schema generation for Protocol Buffers (protobuf)
@@ -90,11 +91,20 @@ public class ProtobufModelConverter implements ModelConverter {
 
     private final ObjectMapperProvider springDocObjectMapper;
     private final ProtobufNameResolver protobufNameResolver;
+    private final OneofBehavior oneofBehavior;
 
     public ProtobufModelConverter(
             ObjectMapperProvider springDocObjectMapper, ProtobufNameResolver protobufNameResolver) {
+        this(springDocObjectMapper, protobufNameResolver, OneofBehavior.FLATTEN);
+    }
+
+    public ProtobufModelConverter(
+            ObjectMapperProvider springDocObjectMapper,
+            ProtobufNameResolver protobufNameResolver,
+            OneofBehavior oneofBehavior) {
         this.springDocObjectMapper = springDocObjectMapper;
         this.protobufNameResolver = protobufNameResolver;
+        this.oneofBehavior = oneofBehavior;
     }
 
     @Override
@@ -141,15 +151,17 @@ public class ProtobufModelConverter implements ModelConverter {
             schema.setDeprecated(true);
         }
 
-        for (var field : descriptor.getFields()) {
-            var fieldType = getGetterReturnType(cls, field);
-            var fieldName = underlineToCamel(field.getName());
+        var useOneOf = oneofBehavior == OneofBehavior.ONE_OF;
 
-            var fieldSchema = context.resolve(
-                    new AnnotatedType(fieldType).schemaProperty(true).resolveAsRef(true));
-            if (field.getOptions().getDeprecated()) {
-                fieldSchema = newSchema(fieldSchema).deprecated(true);
+        for (var field : descriptor.getFields()) {
+            // In ONE_OF mode, members of a real oneof are handled below as a dedicated oneOf group.
+            // Synthetic oneofs (proto3 'optional') have getRealContainingOneof() == null and stay here.
+            if (useOneOf && field.getRealContainingOneof() != null) {
+                continue;
             }
+
+            var fieldName = underlineToCamel(field.getName());
+            var fieldSchema = resolveFieldSchema(cls, field, context);
 
             schema.addProperty(fieldName, fieldSchema);
 
@@ -158,11 +170,53 @@ public class ProtobufModelConverter implements ModelConverter {
             }
         }
 
+        if (useOneOf) {
+            for (var oneof : descriptor.getRealOneofs()) {
+                schema.addAllOfItem(createSchemaForOneof(cls, oneof, context));
+            }
+        }
+
         // Register the enum schema in the context
         context.defineModel(schemaName, schema);
 
         // Return a $ref to the registered schema
         return new Schema<>().$ref(ref);
+    }
+
+    /**
+     * Builds an OpenAPI {@code oneOf} schema for a single protobuf {@code oneof} group. Each member
+     * becomes a branch that requires exactly that field, documenting the mutual exclusion between
+     * the members.
+     */
+    private Schema<?> createSchemaForOneof(
+            Class<?> cls, Descriptors.OneofDescriptor oneof, ModelConverterContext context) {
+        var oneOfSchema = new Schema<>();
+        for (var field : oneof.getFields()) {
+            var fieldName = underlineToCamel(field.getName());
+            var fieldSchema = resolveFieldSchema(cls, field, context);
+
+            var branch = new ObjectSchema();
+            branch.addProperty(fieldName, fieldSchema);
+            branch.addRequiredItem(fieldName);
+
+            oneOfSchema.addOneOfItem(branch);
+        }
+        return oneOfSchema;
+    }
+
+    /**
+     * Resolves the OpenAPI schema for a single protobuf field, applying the {@code deprecated} flag
+     * when the field is marked deprecated in the {@code .proto} definition.
+     */
+    private Schema<?> resolveFieldSchema(
+            Class<?> cls, Descriptors.FieldDescriptor field, ModelConverterContext context) {
+        var fieldType = getGetterReturnType(cls, field);
+        var fieldSchema = context.resolve(
+                new AnnotatedType(fieldType).schemaProperty(true).resolveAsRef(true));
+        if (field.getOptions().getDeprecated()) {
+            fieldSchema = newSchema(fieldSchema).deprecated(true);
+        }
+        return fieldSchema;
     }
 
     private static boolean isOptional(Descriptors.FieldDescriptor field) {

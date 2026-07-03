@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.springdoc.core.providers.ObjectMapperProvider;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.ResolvableType;
+import springdocbridge.protobuf.SpringDocBridgeProtobufProperties.OneofBehavior;
 import springdocbridge.protobuf.SpringDocBridgeProtobufProperties.SchemaNamingStrategy;
 import types.v1.DeprecatedTestMessage;
 import types.v1.EnumTestMessage;
@@ -204,6 +205,60 @@ class ProtobufModelConverterTest {
 
             // Verify the properties exist
             assertThat(schema.getProperties()).containsKeys("referralCode", "promoCode", "source1", "source2");
+        }
+
+        @Test
+        void shouldKeepFlatSchemaByDefault() {
+            var schema = resolve(OneofTestMessage.class);
+
+            // FLATTEN is the default: oneof members are sibling properties, no oneOf/allOf is emitted.
+            assertThat(schema.getProperties())
+                    .containsKeys("regularField", "referralCode", "promoCode", "source1", "source2", "nickname");
+            assertThat(schema.getAllOf()).isNull();
+            assertThat(schema.getOneOf()).isNull();
+        }
+
+        // https://github.com/DanielLiu1123/springdoc-bridge/issues/23
+        @Test
+        void shouldEmitOneOfForOneofGroupsWhenOneOfBehaviorEnabled() {
+            var context = getModelConverterContext(SchemaNamingStrategy.SPRINGDOC, true, OneofBehavior.ONE_OF);
+            var schema = resolveAnnotatedType(context, new AnnotatedType(OneofTestMessage.class));
+
+            // oneof members are no longer sibling properties
+            assertThat(schema.getProperties())
+                    .containsKey("regularField")
+                    .doesNotContainKeys("referralCode", "promoCode", "source1", "source2");
+
+            // one allOf entry per real oneof group ('method' and 'Source')
+            List<Schema> allOf = schema.getAllOf();
+            assertThat(allOf).hasSize(2);
+
+            var branchRequiredFields = new java.util.ArrayList<String>();
+            for (Schema<?> group : allOf) {
+                List<Schema> branches = group.getOneOf();
+                // each group is a oneOf with exactly two branches
+                assertThat(branches).hasSize(2);
+                for (Schema<?> branch : branches) {
+                    // each branch requires exactly one field and exposes it as a property
+                    assertThat(branch.getRequired()).hasSize(1);
+                    assertThat(branch.getProperties().keySet()).containsExactlyElementsOf(branch.getRequired());
+                    branchRequiredFields.addAll(branch.getRequired());
+                }
+            }
+            assertThat(branchRequiredFields)
+                    .containsExactlyInAnyOrder("referralCode", "promoCode", "source1", "source2");
+        }
+
+        // proto3 'optional' is a synthetic oneof and must stay a regular optional property.
+        @Test
+        void shouldNotWrapProto3OptionalFieldWhenOneOfBehaviorEnabled() {
+            var context = getModelConverterContext(SchemaNamingStrategy.SPRINGDOC, true, OneofBehavior.ONE_OF);
+            var schema = resolveAnnotatedType(context, new AnnotatedType(OneofTestMessage.class));
+
+            assertThat(schema.getProperties()).containsKey("nickname");
+            assertThat(schema.getRequired()).doesNotContain("nickname");
+            // only the two real oneofs produce oneOf groups, the synthetic one does not
+            assertThat(schema.getAllOf()).hasSize(2);
         }
     }
 
@@ -401,15 +456,22 @@ class ProtobufModelConverterTest {
 
     private static ModelConverterContext getModelConverterContext(
             SchemaNamingStrategy schemaNamingStrategy, boolean useFqn) {
+        return getModelConverterContext(schemaNamingStrategy, useFqn, OneofBehavior.FLATTEN);
+    }
+
+    private static ModelConverterContext getModelConverterContext(
+            SchemaNamingStrategy schemaNamingStrategy, boolean useFqn, OneofBehavior oneofBehavior) {
 
         var jsonMapper = JsonMapper.builder().build();
 
         var objectMapperProvider = mock(ObjectMapperProvider.class);
         when(objectMapperProvider.jsonMapper()).thenReturn(jsonMapper);
 
-        var modelConverters = ModelConverters.getInstance(true);
+        // Use a fresh instance (not the shared getInstance singleton) so behavior-specific
+        // converters added by different tests do not accumulate and interfere with each other.
+        var modelConverters = new ModelConverters(true);
         modelConverters.addConverter(new ProtobufModelConverter(
-                objectMapperProvider, new ProtobufNameResolver(schemaNamingStrategy, useFqn)));
+                objectMapperProvider, new ProtobufNameResolver(schemaNamingStrategy, useFqn), oneofBehavior));
 
         return new ModelConverterContextImpl(modelConverters.getConverters());
     }
