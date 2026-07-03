@@ -2,8 +2,7 @@ plugins {
     id "org.springframework.boot" version "${springBootVersion}" apply false
     id "com.diffplug.spotless" version "${spotlessVersion}" apply false
     id "com.github.spotbugs" version "${spotbugsVersion}" apply false
-    // https://github.com/google/protobuf-gradle-plugin
-    id "com.google.protobuf" version "+" apply false
+    id "com.google.protobuf" version "${protobufPluginVersion}" apply false
     id "io.github.danielliu1123.deployer" version "${deployerVersion}"
 }
 
@@ -37,8 +36,6 @@ subprojects {
     repositories {
         mavenLocal()
         mavenCentral()
-        maven { url = "https://repo.spring.io/snapshot" }
-        maven { url = "https://repo.spring.io/milestone" }
     }
 
     compileJava {
@@ -57,7 +54,7 @@ subprojects {
         testAnnotationProcessor("org.projectlombok:lombok:+")
         compileOnly("com.github.spotbugs:spotbugs-annotations:${spotbugsAnnotationsVersion}")
         // https://docs.gradle.org/current/userguide/upgrading_version_8.html#test_framework_implementation_dependencies
-        testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+        testRuntimeOnly("org.junit.platform:junit-platform-launcher:${junitLauncherVersion}")
     }
 
     test {

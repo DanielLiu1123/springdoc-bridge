@@ -219,11 +219,11 @@ public class ProtobufModelConverter implements ModelConverter {
 
         String getterMethodName;
         if (fieldDescriptor.isMapField()) {
-            getterMethodName = "get" + underlineToPascal(fieldName) + "Map";
+            getterMethodName = "get" + fieldNameToGetterInfix(fieldName) + "Map";
         } else if (fieldDescriptor.isRepeated()) {
-            getterMethodName = "get" + underlineToPascal(fieldName) + "List";
+            getterMethodName = "get" + fieldNameToGetterInfix(fieldName) + "List";
         } else {
-            getterMethodName = "get" + underlineToPascal(fieldName);
+            getterMethodName = "get" + fieldNameToGetterInfix(fieldName);
         }
 
         try {
@@ -249,12 +249,41 @@ public class ProtobufModelConverter implements ModelConverter {
         return sb.toString();
     }
 
-    private static String underlineToPascal(String name) {
-        var n = underlineToCamel(name);
-        if (n.isBlank()) {
-            return n;
+    /**
+     * Converts a protobuf field name into the capitalized camelCase infix used by the generated
+     * Java getter/setter names (e.g. {@code "a1b64"} -> {@code "A1B64"}, so the getter is
+     * {@code getA1B64()}).
+     *
+     * <p>This replicates protobuf's own {@code UnderscoresToCamelCase} name mangling used by the
+     * Java code generator: the first letter is capitalized, the letter following an underscore is
+     * capitalized, and — crucially — the letter following a digit is also capitalized. A naive
+     * snake_case-to-PascalCase conversion misses the digit rule and produces a getter name that
+     * does not exist, which previously caused such fields to fall back to a generic schema.
+     *
+     * @see <a href="https://github.com/DanielLiu1123/springdoc-bridge/issues/21">Issue #21</a>
+     */
+    private static String fieldNameToGetterInfix(String name) {
+        var sb = new StringBuilder(name.length());
+        var capNext = true;
+        for (var i = 0; i < name.length(); i++) {
+            var c = name.charAt(i);
+            if (c >= 'a' && c <= 'z') {
+                sb.append(capNext ? Character.toUpperCase(c) : c);
+                capNext = false;
+            } else if (c >= 'A' && c <= 'Z') {
+                // Existing capitals are left as-is (protobuf only lowercases a leading capital
+                // when it is explicitly told not to capitalize the first letter).
+                sb.append(c);
+                capNext = false;
+            } else if (c >= '0' && c <= '9') {
+                sb.append(c);
+                capNext = true;
+            } else {
+                // Underscore or any other separator: capitalize the next letter.
+                capNext = true;
+            }
         }
-        return Character.toUpperCase(n.charAt(0)) + n.substring(1);
+        return sb.toString();
     }
 
     @SuppressWarnings("rawtypes")

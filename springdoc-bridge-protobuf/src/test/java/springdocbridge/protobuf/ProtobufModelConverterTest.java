@@ -31,7 +31,6 @@ import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
 import java.lang.reflect.Type;
 import java.util.List;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springdoc.core.providers.ObjectMapperProvider;
@@ -40,20 +39,18 @@ import org.springframework.core.ResolvableType;
 import springdocbridge.protobuf.SpringDocBridgeProtobufProperties.SchemaNamingStrategy;
 import types.v1.DeprecatedTestMessage;
 import types.v1.EnumTestMessage;
+import types.v1.FieldNamingTestMessage;
 import types.v1.MapTestMessage;
 import types.v1.OneofTestMessage;
 import types.v1.OptionalTestMessage;
 import types.v1.RepeatedTestMessage;
 
-@DisplayName("ProtobufWellKnownTypeModelConverter Tests")
 class ProtobufModelConverterTest {
 
     @Nested
-    @DisplayName("Well-Known Types Schema Tests")
     class WellKnownTypesSchemaTests {
 
         @Test
-        @DisplayName("Should convert Timestamp to date-time string schema")
         void shouldConvertTimestampToDateTimeStringSchema() {
             var schema = resolve(Timestamp.class);
 
@@ -63,7 +60,6 @@ class ProtobufModelConverterTest {
         }
 
         @Test
-        @DisplayName("Should convert Duration to string schema with pattern")
         void shouldConvertDurationToStringSchemaWithPattern() {
             var schema = resolve(Duration.class);
 
@@ -73,7 +69,6 @@ class ProtobufModelConverterTest {
         }
 
         @Test
-        @DisplayName("Should convert BoolValue to boolean schema")
         void shouldConvertBoolValueToBooleanSchema() {
             var schema = resolve(BoolValue.class);
 
@@ -81,7 +76,6 @@ class ProtobufModelConverterTest {
         }
 
         @Test
-        @DisplayName("Should convert Int32Value to integer schema")
         void shouldConvertInt32ValueToIntegerSchema() {
             var schema = resolve(Int32Value.class);
 
@@ -91,7 +85,6 @@ class ProtobufModelConverterTest {
         }
 
         @Test
-        @DisplayName("Should convert StringValue to string schema")
         void shouldConvertStringValueToStringSchema() {
             var schema = resolve(StringValue.class);
 
@@ -100,11 +93,9 @@ class ProtobufModelConverterTest {
     }
 
     @Nested
-    @DisplayName("Special Types Schema Tests")
     class SpecialTypesSchemaTests {
 
         @Test
-        @DisplayName("Should convert Any to object schema with @type field")
         void shouldConvertAnyToObjectSchemaWithTypeField() {
             var schema = resolve(Any.class);
 
@@ -115,7 +106,6 @@ class ProtobufModelConverterTest {
         }
 
         @Test
-        @DisplayName("Should convert Struct to object schema with additional properties")
         void shouldConvertStructToObjectSchemaWithAdditionalProperties() {
             var schema = resolve(Struct.class);
 
@@ -125,7 +115,6 @@ class ProtobufModelConverterTest {
         }
 
         @Test
-        @DisplayName("Should convert ListValue to array schema")
         void shouldConvertListValueToArraySchema() {
             var schema = resolve(ListValue.class);
 
@@ -135,7 +124,6 @@ class ProtobufModelConverterTest {
         }
 
         @Test
-        @DisplayName("Should convert FieldMask to string schema")
         void shouldConvertFieldMaskToStringSchema() {
             var schema = resolve(FieldMask.class);
 
@@ -143,7 +131,6 @@ class ProtobufModelConverterTest {
         }
 
         @Test
-        @DisplayName("Should convert Empty to empty object schema")
         void shouldConvertEmptyToEmptyObjectSchema() {
             var schema = resolve(Empty.class);
 
@@ -151,7 +138,6 @@ class ProtobufModelConverterTest {
         }
 
         @Test
-        @DisplayName("Should convert ByteString to base64 string schema")
         void shouldConvertByteStringToBase64StringSchema() {
             var schema = resolve(ByteString.class);
 
@@ -162,11 +148,9 @@ class ProtobufModelConverterTest {
     }
 
     @Nested
-    @DisplayName("Protobuf Enum Schema Tests")
     class ProtobufEnumSchemaTests {
 
         @Test
-        @DisplayName("Should remove UNRECOGNIZED from enum values")
         void shouldRemoveUnrecognizedFromEnumValues() {
             // Given
             var schema = resolve(EnumTestMessage.Enum.class);
@@ -179,11 +163,9 @@ class ProtobufModelConverterTest {
     }
 
     @Nested
-    @DisplayName("Protobuf repeated fields tests")
     class ProtobufRepeatedFieldsTests {
 
         @Test
-        @DisplayName("Should convert repeated string field to array schema")
         void shouldConvertRepeatedStringFieldToArraySchema() {
             var schema = resolve(RepeatedTestMessage.class);
 
@@ -204,10 +186,8 @@ class ProtobufModelConverterTest {
     }
 
     @Nested
-    @DisplayName("Required fields tests")
     class RequiredFieldsTests {
         @Test
-        @DisplayName("Should mark required fields by default")
         void shouldMarkRequiredFieldsByDefault() {
             var schema = resolve(OptionalTestMessage.class);
 
@@ -215,7 +195,6 @@ class ProtobufModelConverterTest {
         }
 
         @Test
-        @DisplayName("Should mark oneof fields as optional")
         void shouldMarkOneofFieldsAsOptional() {
             var schema = resolve(OneofTestMessage.class);
 
@@ -229,10 +208,26 @@ class ProtobufModelConverterTest {
     }
 
     @Nested
-    @DisplayName("Deprecated fields tests")
+    class FieldNamingTests {
+
+        // https://github.com/DanielLiu1123/springdoc-bridge/issues/21
+        @Test
+        void shouldResolveFieldSchemasWhenLetterFollowsDigit() {
+            var schema = resolve(FieldNamingTestMessage.class);
+
+            // Protobuf capitalizes the letter after a digit for the generated getter
+            // (a1b64 -> getA1B64), which previously broke schema resolution and fell back to string.
+            assertThat(schema.getProperties()).containsKeys("a1b64", "a1b48", "my2ndValue", "normalField");
+            assertThat(schema.getProperties().get("a1b64").getTypes()).containsExactly("string");
+            assertThat(schema.getProperties().get("a1b48").getTypes()).containsExactly("string");
+            assertThat(schema.getProperties().get("my2ndValue").getTypes()).containsExactly("integer");
+            assertThat(schema.getProperties().get("normalField").getTypes()).containsExactly("string");
+        }
+    }
+
+    @Nested
     class DeprecatedFieldsTests {
         @Test
-        @DisplayName("Should mark deprecated fields")
         void shouldMarkDeprecatedFields() {
             // Given
             @SuppressWarnings("deprecation")
@@ -248,11 +243,9 @@ class ProtobufModelConverterTest {
     }
 
     @Nested
-    @DisplayName("Protobuf map fields tests")
     class ProtobufMapFieldsTests {
 
         @Test
-        @DisplayName("Should convert map with string values to object schema")
         void shouldConvertMapWithStringValuesToObjectSchema() {
             var schema = resolve(MapTestMessage.class);
 
@@ -263,7 +256,6 @@ class ProtobufModelConverterTest {
         }
 
         @Test
-        @DisplayName("Should convert map with enum values to object schema")
         void shouldConvertMapWithEnumValuesToObjectSchema() {
             var schema = resolve(MapTestMessage.class);
 
@@ -274,7 +266,6 @@ class ProtobufModelConverterTest {
         }
 
         @Test
-        @DisplayName("Should convert map with message values to object schema")
         void shouldConvertMapWithMessageValuesToObjectSchema() {
             var schema = resolve(MapTestMessage.class);
 
@@ -285,7 +276,6 @@ class ProtobufModelConverterTest {
         }
 
         @Test
-        @DisplayName("Should convert map with int values to object schema")
         void showBeConvertMapWithIntValuesToObjectSchema() {
             var schema = resolve(MapTestMessage.class);
 
@@ -296,7 +286,6 @@ class ProtobufModelConverterTest {
         }
 
         @Test
-        @DisplayName("Should be deprecated when using [deprecated = true] in proto")
         void shouldBeDeprecatedWhenUsingDeprecatedInProto() {
             var schema = resolve(MapTestMessage.class);
 
@@ -309,11 +298,9 @@ class ProtobufModelConverterTest {
     }
 
     @Nested
-    @DisplayName("Resolve List tests")
     class ResolveListTests {
 
         @Test
-        @DisplayName("Return null when resolve List without schemaProperty")
         void nullWhenResolveListWithoutSchemaProperty() {
 
             // This is why we need to set schemaProperty to true
@@ -331,7 +318,6 @@ class ProtobufModelConverterTest {
         }
 
         @Test
-        @DisplayName("Should resolve List when set schemaProperty to true")
         void shouldResolveListWhenSetSchemaPropertyToTrue() {
             // Given
             var type = ResolvableType.forType(new ParameterizedTypeReference<List<String>>() {})
@@ -349,11 +335,9 @@ class ProtobufModelConverterTest {
     }
 
     @Nested
-    @DisplayName("Schema Naming Strategy Tests")
     class SchemaNamingStrategyTests {
 
         @Test
-        @DisplayName("Should use simple name when using Springdoc naming strategy and not using FQN")
         void shouldUseSimpleNameWhenUsingSpringdocNamingStrategyAndNotUsingFqn() {
             // Arrange
             var context = getModelConverterContext(SchemaNamingStrategy.SPRINGDOC, false);
@@ -366,7 +350,6 @@ class ProtobufModelConverterTest {
         }
 
         @Test
-        @DisplayName("Should use FQN when using Springdoc naming strategy and using FQN")
         void shouldUseFqnWhenUsingSpringdocNamingStrategyAndUsingFqn() {
             // Arrange
             var context = getModelConverterContext(SchemaNamingStrategy.SPRINGDOC, true);
@@ -379,7 +362,6 @@ class ProtobufModelConverterTest {
         }
 
         @Test
-        @DisplayName("Should use protobuf name when using Protobuf naming strategy")
         void shouldUseProtobufNameWhenUsingProtobufNamingStrategy() {
             // Arrange
             var context = getModelConverterContext(SchemaNamingStrategy.PROTOBUF, true);

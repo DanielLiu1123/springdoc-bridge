@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package types.v1;
+
+option java_multiple_files = true;
+option java_package = "types.v1";
+
+// Reproduces https://github.com/DanielLiu1123/springdoc-bridge/issues/21
+// Field names where a letter immediately follows a digit trigger protobuf's
+// camelCase rule that capitalizes the letter after a digit, e.g.
+// "a1b64" -> getter getA1B64().
+message FieldNamingTestMessage {
+  string a1b64 = 1;
+  string a1b48 = 2;
+  int32 my2nd_value = 3;
+  string normal_field = 4;
+}
