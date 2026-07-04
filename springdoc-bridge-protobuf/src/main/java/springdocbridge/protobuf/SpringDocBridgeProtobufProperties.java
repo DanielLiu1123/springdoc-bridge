@@ -78,8 +78,7 @@ public class SpringDocBridgeProtobufProperties {
      *
      * <p> Default is {@link OneofBehavior#FLATTEN} to keep backward compatibility.
      *
-     * @since 0.4.0
-     * @see <a href="https://github.com/DanielLiu1123/springdoc-bridge/issues/23">Issue #23</a>
+     * @since 1.1.0
      */
     private OneofBehavior oneofBehavior = OneofBehavior.FLATTEN;
 
@@ -103,15 +102,10 @@ public class SpringDocBridgeProtobufProperties {
 
     /**
      * Strategy for representing protobuf {@code oneof} groups in OpenAPI.
-     *
-     * @since 0.4.0
      */
     public enum OneofBehavior {
         /**
          * Emit every oneof member as a sibling optional property.
-         *
-         * <p> This is the historical behavior: the mutual exclusion between oneof members is not
-         * represented in the schema, but the output stays flat and simple.
          */
         FLATTEN,
         /**

@@ -94,11 +94,6 @@ public class ProtobufModelConverter implements ModelConverter {
     private final OneofBehavior oneofBehavior;
 
     public ProtobufModelConverter(
-            ObjectMapperProvider springDocObjectMapper, ProtobufNameResolver protobufNameResolver) {
-        this(springDocObjectMapper, protobufNameResolver, OneofBehavior.FLATTEN);
-    }
-
-    public ProtobufModelConverter(
             ObjectMapperProvider springDocObjectMapper,
             ProtobufNameResolver protobufNameResolver,
             OneofBehavior oneofBehavior) {
