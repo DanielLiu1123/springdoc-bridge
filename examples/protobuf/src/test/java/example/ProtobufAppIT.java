@@ -113,9 +113,13 @@ class ProtobufAppIT {
 
             // Then
             assertThat(userSchema).isNotNull();
-            assertThat(userSchema.get("type").asString()).isEqualTo("object");
 
-            JsonNode properties = userSchema.get("properties");
+            // User has oneof groups, so its regular fields live in the first allOf member
+            // (see 'oneof-behavior: one_of'); the oneof groups are the remaining allOf members.
+            JsonNode base = userSchema.get("allOf").get(0);
+            assertThat(base.get("type").asString()).isEqualTo("object");
+
+            JsonNode properties = base.get("properties");
             assertThat(properties).isNotNull();
 
             // Verify basic fields
@@ -144,6 +148,24 @@ class ProtobufAppIT {
             JsonNode createdAtField = properties.get("createdAt");
             assertThat(createdAtField.get("type").asString()).isEqualTo("string");
             assertThat(createdAtField.get("format").asString()).isEqualTo("date-time");
+
+            // Oneof members are NOT flattened into the base object's properties
+            assertThat(properties.has("contactEmail")).isFalse();
+            assertThat(properties.has("passport")).isFalse();
+
+            // The two oneof groups are the remaining allOf members
+            JsonNode allOf = userSchema.get("allOf");
+            assertThat(allOf.size()).isEqualTo(3);
+            java.util.List<String> branchFields = new java.util.ArrayList<>();
+            for (int i = 1; i < allOf.size(); i++) {
+                for (JsonNode branch : allOf.get(i).get("oneOf")) {
+                    assertThat(branch.get("required").size()).isEqualTo(1);
+                    branchFields.add(branch.get("required").get(0).asString());
+                }
+            }
+            // primary_contact (contactEmail / contactPhone) + identity_document (passport / driverLicense)
+            assertThat(branchFields)
+                    .containsExactlyInAnyOrder("contactEmail", "contactPhone", "passport", "driverLicense");
         }
 
         @Test
@@ -185,7 +207,8 @@ class ProtobufAppIT {
 
             // Then
             assertThat(userSchema).isNotNull();
-            JsonNode properties = userSchema.get("properties");
+            // User's regular fields live in the first allOf member (see 'oneof-behavior: one_of')
+            JsonNode properties = userSchema.get("allOf").get(0).get("properties");
             assertThat(properties).isNotNull();
 
             // Verify tags field (repeated string) is a proper array without properties

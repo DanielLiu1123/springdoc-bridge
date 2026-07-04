@@ -30,6 +30,34 @@ message User {
   google.protobuf.Timestamp updated_at = 18;
   google.protobuf.Timestamp last_login_at = 19;
 
+  // Two oneof groups demonstrating the oneof -> oneOf mapping on the User message.
+  // With 'springdoc-bridge.protobuf.oneof-behavior: one_of', each group becomes
+  // its own 'oneOf' under the shared 'allOf'.
+
+  // Exactly one primary contact channel (a oneof of scalar members).
+  oneof primary_contact {
+    string contact_email = 20;
+    string contact_phone = 21;
+  }
+
+  // Exactly one identity document (a second oneof, of message members).
+  oneof identity_document {
+    Passport passport = 22;
+    DriverLicense driver_license = 23;
+  }
+
+  // Nested message for passport
+  message Passport {
+    string number = 1;
+    string country = 2;
+  }
+
+  // Nested message for driver license
+  message DriverLicense {
+    string number = 1;
+    string state = 2;
+  }
+
   // Nested message for address
   message Address {
     string street = 1;
