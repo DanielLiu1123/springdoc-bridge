@@ -23,18 +23,6 @@ message CreatePaymentRequest {
     DigitalWallet digital_wallet = 6;
   }
 
-  // A second oneof: the payer is either an existing customer or a guest.
-  // A message may contain multiple oneof groups; each becomes its own 'oneOf'.
-  oneof customer {
-    string customer_id = 7;
-    GuestCustomer guest = 8;
-  }
-
-  message GuestCustomer {
-    string email = 1;
-    string full_name = 2;
-  }
-
   message CreditCard {
     string number = 1;
     string holder_name = 2;

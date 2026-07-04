@@ -195,6 +195,8 @@ message Pet {
   ```
 
   > **Note:** protobuf allows a oneof to be entirely unset ("at most one"), whereas OpenAPI `oneOf` requires exactly one branch to match. The generated schema therefore documents the slightly stricter "exactly one" intent rather than acting as a strict validation contract. Synthetic oneofs used to implement proto3 `optional` fields are unaffected and stay regular optional properties.
+  >
+  > **Multiple oneof groups:** a message may contain several oneof groups; each becomes its own `oneOf` member under the shared `allOf`, which is the semantically correct "one from each group". Be aware that some renderers (e.g. Swagger UI) merge multiple `oneOf` members into a single combined selector, so the independent groups may not display distinctly even though the schema is correct.
 
 ## Testing
 
