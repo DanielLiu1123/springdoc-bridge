@@ -140,16 +140,63 @@ to [jackson-module-protobuf#custom-configuration](../jackson-module-protobuf/REA
 
 ### Configuration Properties
 
-| Property                                             | Type      | Default     | Description                                      |
-|------------------------------------------------------|-----------|-------------|--------------------------------------------------|
-| `springdoc-bridge.protobuf.enabled`                  | `boolean` | `true`      | Enable or disable protobuf support               |
-| `springdoc-bridge.protobuf.register-protobuf-module` | `boolean` | `true`      | Auto-register Jackson ProtobufModule             |
-| `springdoc-bridge.protobuf.schema-naming-strategy`   | `enum`    | `SPRINGDOC` | Schema naming strategy (`SPRINGDOC`, `PROTOBUF`) |
+| Property                                             | Type      | Default     | Description                                       |
+|------------------------------------------------------|-----------|-------------|---------------------------------------------------|
+| `springdoc-bridge.protobuf.enabled`                  | `boolean` | `true`      | Enable or disable protobuf support                |
+| `springdoc-bridge.protobuf.register-protobuf-module` | `boolean` | `true`      | Auto-register Jackson ProtobufModule              |
+| `springdoc-bridge.protobuf.schema-naming-strategy`   | `enum`    | `SPRINGDOC` | Schema naming strategy (`SPRINGDOC`, `PROTOBUF`)  |
+| `springdoc-bridge.protobuf.oneof-behavior`           | `enum`    | `FLATTEN`   | How `oneof` groups are rendered (`FLATTEN`, `ONE_OF`) |
 
 ### Schema Naming Strategies
 
 - **`SPRINGDOC`**: Uses SpringDoc's default naming (respects `springdoc.use-fqn` setting)
 - **`PROTOBUF`**: Uses protobuf's full type name (e.g., `user.v1.User`)
+
+### Oneof Behavior
+
+Controls how protobuf [`oneof`](https://protobuf.dev/programming-guides/proto3/#oneof) groups are represented in the generated OpenAPI schema.
+
+Given the message:
+
+```protobuf
+message Pet {
+  string name = 1;
+  oneof pet_type {
+    Cat cat = 2;
+    Dog dog = 3;
+  }
+}
+```
+
+- **`FLATTEN`** (default): every oneof member is emitted as a sibling optional property (`cat` and `dog`). Simple and backward-compatible, but the mutual exclusion is not documented.
+
+  ```yaml
+  Pet:
+    type: object
+    properties:
+      name: { type: string }
+      cat: { $ref: "#/components/schemas/Cat" }
+      dog: { $ref: "#/components/schemas/Dog" }
+    required: [ name ]
+  ```
+
+- **`ONE_OF`**: each oneof group is emitted as an OpenAPI `oneOf`, documenting the mutual exclusion between members. The regular fields and the oneof groups are composed under a single `allOf` (so a message may contain multiple groups, and renderers keep the common fields visible next to the oneof variants).
+
+  ```yaml
+  Pet:
+    allOf:
+      - type: object
+        properties:
+          name: { type: string }
+        required: [ name ]
+      - oneOf:
+          - { type: object, properties: { cat: { $ref: "#/components/schemas/Cat" } }, required: [ cat ] }
+          - { type: object, properties: { dog: { $ref: "#/components/schemas/Dog" } }, required: [ dog ] }
+  ```
+
+  > **Note:** protobuf allows a oneof to be entirely unset ("at most one"), whereas OpenAPI `oneOf` requires exactly one branch to match. The generated schema therefore documents the slightly stricter "exactly one" intent rather than acting as a strict validation contract. Synthetic oneofs used to implement proto3 `optional` fields are unaffected and stay regular optional properties.
+  >
+  > **Multiple oneof groups:** a message may contain several oneof groups; each becomes its own `oneOf` member under the shared `allOf`, which is the semantically correct "one from each group". Be aware that some renderers (e.g. Swagger UI) merge multiple `oneOf` members into a single combined selector, so the independent groups may not display distinctly even though the schema is correct.
 
 ## Testing
 

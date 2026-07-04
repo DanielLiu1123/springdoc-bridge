@@ -102,6 +102,7 @@ public class SpringDocBridgeProtobufAutoConfiguration {
                 objectMapperProvider,
                 new ProtobufNameResolver(
                         springDocBridgeProtobufProperties.getSchemaNamingStrategy(),
-                        springDocConfigProperties.isUseFqn()));
+                        springDocConfigProperties.isUseFqn()),
+                springDocBridgeProtobufProperties.getOneofBehavior());
     }
 }

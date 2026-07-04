@@ -113,9 +113,13 @@ class ProtobufAppIT {
 
             // Then
             assertThat(userSchema).isNotNull();
-            assertThat(userSchema.get("type").asString()).isEqualTo("object");
 
-            JsonNode properties = userSchema.get("properties");
+            // User has oneof groups, so its regular fields live in the first allOf member
+            // (see 'oneof-behavior: one_of'); the oneof groups are the remaining allOf members.
+            JsonNode base = userSchema.get("allOf").get(0);
+            assertThat(base.get("type").asString()).isEqualTo("object");
+
+            JsonNode properties = base.get("properties");
             assertThat(properties).isNotNull();
 
             // Verify basic fields
@@ -144,6 +148,24 @@ class ProtobufAppIT {
             JsonNode createdAtField = properties.get("createdAt");
             assertThat(createdAtField.get("type").asString()).isEqualTo("string");
             assertThat(createdAtField.get("format").asString()).isEqualTo("date-time");
+
+            // Oneof members are NOT flattened into the base object's properties
+            assertThat(properties.has("contactEmail")).isFalse();
+            assertThat(properties.has("passport")).isFalse();
+
+            // The two oneof groups are the remaining allOf members
+            JsonNode allOf = userSchema.get("allOf");
+            assertThat(allOf.size()).isEqualTo(3);
+            java.util.List<String> branchFields = new java.util.ArrayList<>();
+            for (int i = 1; i < allOf.size(); i++) {
+                for (JsonNode branch : allOf.get(i).get("oneOf")) {
+                    assertThat(branch.get("required").size()).isEqualTo(1);
+                    branchFields.add(branch.get("required").get(0).asString());
+                }
+            }
+            // primary_contact (contactEmail / contactPhone) + identity_document (passport / driverLicense)
+            assertThat(branchFields)
+                    .containsExactlyInAnyOrder("contactEmail", "contactPhone", "passport", "driverLicense");
         }
 
         @Test
@@ -185,7 +207,8 @@ class ProtobufAppIT {
 
             // Then
             assertThat(userSchema).isNotNull();
-            JsonNode properties = userSchema.get("properties");
+            // User's regular fields live in the first allOf member (see 'oneof-behavior: one_of')
+            JsonNode properties = userSchema.get("allOf").get(0).get("properties");
             assertThat(properties).isNotNull();
 
             // Verify tags field (repeated string) is a proper array without properties
@@ -208,6 +231,48 @@ class ProtobufAppIT {
             assertThat(phoneNumbersField.get("type").asString()).isEqualTo("array");
             assertThat(phoneNumbersField.get("items").has("$ref")).isTrue();
             assertThat(phoneNumbersField.has("properties")).isFalse(); // This should not exist for arrays
+        }
+
+        @Test
+        @DisplayName("Oneof groups are rendered as oneOf when oneof-behavior is one_of")
+        void oneofGroupsAreRenderedAsOneOf() {
+            // Given (application enables 'oneof-behavior: one_of')
+            JsonNode apiDocs = getApiDocs();
+            JsonNode schema = apiDocs.get("components").get("schemas").get("user.v1.CreateUserRequest");
+
+            // Then
+            assertThat(schema).isNotNull();
+
+            // Regular fields and the oneof groups are composed under a single allOf so that renderers
+            // keep the common properties visible alongside the oneof variants.
+            assertThat(schema.has("properties")).isFalse();
+
+            JsonNode allOf = schema.get("allOf");
+            assertThat(allOf).isNotNull();
+            // allOf = [ base object (regular fields), oneOf('invitation'), oneOf('credential') ]
+            assertThat(allOf.size()).isEqualTo(3);
+
+            // First allOf member holds the non-oneof fields
+            JsonNode baseProperties = allOf.get(0).get("properties");
+            assertThat(baseProperties.has("user")).isTrue();
+            // Oneof members are NOT flattened into sibling properties
+            assertThat(baseProperties.has("referralCode")).isFalse();
+            assertThat(baseProperties.has("password")).isFalse();
+
+            // Remaining allOf members are the two oneof groups; each branch requires exactly its field
+            java.util.List<String> branchFields = new java.util.ArrayList<>();
+            for (int i = 1; i < allOf.size(); i++) {
+                JsonNode oneOf = allOf.get(i).get("oneOf");
+                assertThat(oneOf).isNotNull();
+                for (JsonNode branch : oneOf) {
+                    assertThat(branch.get("required").size()).isEqualTo(1);
+                    String field = branch.get("required").get(0).asString();
+                    assertThat(branch.get("properties").has(field)).isTrue();
+                    branchFields.add(field);
+                }
+            }
+            // invitation (referralCode / promoCode) + credential (password / oauth)
+            assertThat(branchFields).containsExactlyInAnyOrder("referralCode", "promoCode", "password", "oauth");
         }
     }
 
@@ -368,6 +433,10 @@ class ProtobufAppIT {
         assertThat(schemas.has("user.v1.User.PhoneNumber")).isTrue();
         assertThat(schemas.has("user.v1.CreateUserRequest")).isTrue();
         assertThat(schemas.has("user.v1.CreateUserResponse")).isTrue();
+
+        // Oneof example schemas (nested messages of the CreateUserRequest oneof groups)
+        assertThat(schemas.has("user.v1.CreateUserRequest.PasswordCredential")).isTrue();
+        assertThat(schemas.has("user.v1.CreateUserRequest.OAuthCredential")).isTrue();
     }
 
     private void verifyWellKnownTypesSchemas(JsonNode schemas) {

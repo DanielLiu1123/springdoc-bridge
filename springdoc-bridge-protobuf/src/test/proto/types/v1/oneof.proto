@@ -19,6 +19,9 @@ message OneofTestMessage {
     NestedMessage source2 = 5;
   }
 
+  // proto3 optional is implemented as a synthetic oneof; it must NOT be treated as a oneOf group.
+  optional string nickname = 6;
+
   message NestedMessage {
     string value = 1;
   }

@@ -47,6 +47,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import org.springdoc.core.providers.ObjectMapperProvider;
 import org.springframework.beans.BeanUtils;
+import springdocbridge.protobuf.SpringDocBridgeProtobufProperties.OneofBehavior;
 
 /**
  * OpenAPI model converter that provides specialized schema generation for Protocol Buffers (protobuf)
@@ -90,11 +91,15 @@ public class ProtobufModelConverter implements ModelConverter {
 
     private final ObjectMapperProvider springDocObjectMapper;
     private final ProtobufNameResolver protobufNameResolver;
+    private final OneofBehavior oneofBehavior;
 
     public ProtobufModelConverter(
-            ObjectMapperProvider springDocObjectMapper, ProtobufNameResolver protobufNameResolver) {
+            ObjectMapperProvider springDocObjectMapper,
+            ProtobufNameResolver protobufNameResolver,
+            OneofBehavior oneofBehavior) {
         this.springDocObjectMapper = springDocObjectMapper;
         this.protobufNameResolver = protobufNameResolver;
+        this.oneofBehavior = oneofBehavior;
     }
 
     @Override
@@ -135,34 +140,89 @@ public class ProtobufModelConverter implements ModelConverter {
             return new Schema<>().$ref(ref);
         }
 
-        var schema = new ObjectSchema();
+        var useOneOf = oneofBehavior == OneofBehavior.ONE_OF;
+        var realOneofs = useOneOf ? descriptor.getRealOneofs() : List.<Descriptors.OneofDescriptor>of();
+
+        // Object schema holding all "regular" fields: every field in FLATTEN mode, or every
+        // non-oneof field in ONE_OF mode (synthetic oneofs for proto3 'optional' have
+        // getRealContainingOneof() == null and are treated as regular fields here).
+        var objectSchema = new ObjectSchema();
+        for (var field : descriptor.getFields()) {
+            if (useOneOf && field.getRealContainingOneof() != null) {
+                continue;
+            }
+
+            var fieldName = underlineToCamel(field.getName());
+            var fieldSchema = resolveFieldSchema(cls, field, context);
+
+            objectSchema.addProperty(fieldName, fieldSchema);
+
+            if (!isOptional(field)) {
+                objectSchema.addRequiredItem(fieldName);
+            }
+        }
+
+        Schema<?> schema;
+        if (realOneofs.isEmpty()) {
+            schema = objectSchema;
+        } else {
+            // Compose the regular fields and one oneOf per oneof group under a single allOf, instead
+            // of putting oneOf/allOf as siblings of 'properties'. Keeping 'properties' at the same
+            // level as 'allOf' is valid JSON Schema, but several renderers (e.g. Redoc/Swagger UI)
+            // only render one of them and silently drop the regular properties. Nesting the regular
+            // fields as the first allOf member keeps them visible alongside the oneof variants.
+            schema = new Schema<>();
+            schema.addAllOfItem(objectSchema);
+            for (var oneof : realOneofs) {
+                schema.addAllOfItem(createSchemaForOneof(cls, oneof, context));
+            }
+        }
 
         if (descriptor.getOptions().getDeprecated()) {
             schema.setDeprecated(true);
         }
 
-        for (var field : descriptor.getFields()) {
-            var fieldType = getGetterReturnType(cls, field);
-            var fieldName = underlineToCamel(field.getName());
-
-            var fieldSchema = context.resolve(
-                    new AnnotatedType(fieldType).schemaProperty(true).resolveAsRef(true));
-            if (field.getOptions().getDeprecated()) {
-                fieldSchema = newSchema(fieldSchema).deprecated(true);
-            }
-
-            schema.addProperty(fieldName, fieldSchema);
-
-            if (!isOptional(field)) {
-                schema.addRequiredItem(fieldName);
-            }
-        }
-
-        // Register the enum schema in the context
+        // Register the schema in the context
         context.defineModel(schemaName, schema);
 
         // Return a $ref to the registered schema
         return new Schema<>().$ref(ref);
+    }
+
+    /**
+     * Builds an OpenAPI {@code oneOf} schema for a single protobuf {@code oneof} group. Each member
+     * becomes a branch that requires exactly that field, documenting the mutual exclusion between
+     * the members.
+     */
+    private Schema<?> createSchemaForOneof(
+            Class<?> cls, Descriptors.OneofDescriptor oneof, ModelConverterContext context) {
+        var oneOfSchema = new Schema<>();
+        for (var field : oneof.getFields()) {
+            var fieldName = underlineToCamel(field.getName());
+            var fieldSchema = resolveFieldSchema(cls, field, context);
+
+            var branch = new ObjectSchema();
+            branch.addProperty(fieldName, fieldSchema);
+            branch.addRequiredItem(fieldName);
+
+            oneOfSchema.addOneOfItem(branch);
+        }
+        return oneOfSchema;
+    }
+
+    /**
+     * Resolves the OpenAPI schema for a single protobuf field, applying the {@code deprecated} flag
+     * when the field is marked deprecated in the {@code .proto} definition.
+     */
+    private Schema<?> resolveFieldSchema(
+            Class<?> cls, Descriptors.FieldDescriptor field, ModelConverterContext context) {
+        var fieldType = getGetterReturnType(cls, field);
+        var fieldSchema = context.resolve(
+                new AnnotatedType(fieldType).schemaProperty(true).resolveAsRef(true));
+        if (field.getOptions().getDeprecated()) {
+            fieldSchema = newSchema(fieldSchema).deprecated(true);
+        }
+        return fieldSchema;
     }
 
     private static boolean isOptional(Descriptors.FieldDescriptor field) {

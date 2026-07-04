@@ -54,6 +54,34 @@ public class SpringDocBridgeProtobufProperties {
      */
     private SchemaNamingStrategy schemaNamingStrategy = SchemaNamingStrategy.SPRINGDOC;
 
+    /**
+     * How protobuf {@code oneof} groups are represented in the generated OpenAPI schema.
+     *
+     * <p> Given the following message:
+     *
+     * <pre>{@code
+     * message Pet {
+     *   string name = 1;
+     *   oneof pet_type {
+     *     Cat cat = 2;
+     *     Dog dog = 3;
+     *   }
+     * }
+     * }</pre>
+     *
+     * <ul> The generated schema for {@code Pet} will be:
+     *  <li> With {@link OneofBehavior#FLATTEN}, all oneof members are emitted as sibling optional
+     *       properties ({@code cat} and {@code dog}), losing the mutual-exclusion constraint.
+     *  <li> With {@link OneofBehavior#ONE_OF}, each oneof group is emitted as an OpenAPI
+     *       {@code oneOf} so that the mutual exclusion is documented.
+     * </ul>
+     *
+     * <p> Default is {@link OneofBehavior#FLATTEN} to keep backward compatibility.
+     *
+     * @since 1.1.0
+     */
+    private OneofBehavior oneofBehavior = OneofBehavior.FLATTEN;
+
     public enum SchemaNamingStrategy {
         /**
          * Use Springdoc's naming strategy.
@@ -70,5 +98,32 @@ public class SpringDocBridgeProtobufProperties {
          * <p> Protobuf uses the fully qualified name as the schema name.
          */
         PROTOBUF
+    }
+
+    /**
+     * Strategy for representing protobuf {@code oneof} groups in OpenAPI.
+     */
+    public enum OneofBehavior {
+        /**
+         * Emit every oneof member as a sibling optional property.
+         */
+        FLATTEN,
+        /**
+         * Emit each oneof group as an OpenAPI {@code oneOf}.
+         *
+         * <p> Every member becomes a branch that requires exactly that field. The regular
+         * (non-oneof) fields and the oneof groups are composed under a single {@code allOf}
+         * (so a message may contain multiple oneof groups, and renderers keep the common fields
+         * visible next to the oneof variants). This documents the mutual exclusion between members.
+         *
+         * <p> Note: protobuf allows a oneof to be entirely unset ("at most one"), whereas OpenAPI
+         * {@code oneOf} requires exactly one branch to match. The generated schema therefore models
+         * the slightly stricter "exactly one" contract; it is meant as documentation of intent
+         * rather than a strict validation contract.
+         *
+         * <p> Synthetic oneofs (used to implement proto3 {@code optional} fields) are not affected
+         * and continue to be treated as regular optional properties.
+         */
+        ONE_OF
     }
 }
