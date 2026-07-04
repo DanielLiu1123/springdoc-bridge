@@ -8,7 +8,6 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${springDocsVersion}")
     implementation(project(":springdoc-bridge-protobuf"))
-    implementation("build.buf:protovalidate:${protovalidateVersion}")
 
     // Test dependencies
     testImplementation("org.springframework.boot:spring-boot-starter-test:${springBootVersion}")
