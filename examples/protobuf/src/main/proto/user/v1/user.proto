@@ -150,6 +150,7 @@ message CreateUserRequest {
 
   // Exactly one initial credential (a second oneof, of message members).
   oneof credential {
+
     PasswordCredential password = 4;
     OAuthCredential oauth = 5;
   }

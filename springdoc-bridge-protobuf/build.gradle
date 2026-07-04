@@ -7,6 +7,7 @@ dependencies {
     optional("tools.jackson.core:jackson-databind:${jackson3Version}")
     optional("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
     optional("org.springdoc:springdoc-openapi-starter-common:${springDocsVersion}")
+    optional("build.buf:protovalidate:${protovalidateVersion}")
 
     // Test dependencies
     testImplementation("org.springframework.boot:spring-boot-starter-test:${springBootVersion}")
