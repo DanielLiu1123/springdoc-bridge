@@ -220,22 +220,26 @@ class ProtobufAppIT {
             // Then
             assertThat(paymentSchema).isNotNull();
 
-            // Non-oneof fields stay as regular properties
-            JsonNode properties = paymentSchema.get("properties");
-            assertThat(properties.has("orderId")).isTrue();
-            assertThat(properties.has("currency")).isTrue();
+            // Regular fields and the oneof group are composed under a single allOf so that renderers
+            // keep the common properties visible alongside the oneof variants.
+            assertThat(paymentSchema.has("properties")).isFalse();
 
-            // Oneof members are NOT flattened into sibling properties
-            assertThat(properties.has("creditCard")).isFalse();
-            assertThat(properties.has("bankTransfer")).isFalse();
-            assertThat(properties.has("digitalWallet")).isFalse();
-
-            // The oneof group is expressed as a single allOf -> oneOf with one branch per member
             JsonNode allOf = paymentSchema.get("allOf");
             assertThat(allOf).isNotNull();
-            assertThat(allOf.size()).isEqualTo(1);
+            // allOf = [ base object with regular fields, oneOf('payment_method') ]
+            assertThat(allOf.size()).isEqualTo(2);
 
-            JsonNode oneOf = allOf.get(0).get("oneOf");
+            // First allOf member holds the non-oneof fields
+            JsonNode baseProperties = allOf.get(0).get("properties");
+            assertThat(baseProperties.has("orderId")).isTrue();
+            assertThat(baseProperties.has("currency")).isTrue();
+            // Oneof members are NOT flattened into sibling properties
+            assertThat(baseProperties.has("creditCard")).isFalse();
+            assertThat(baseProperties.has("bankTransfer")).isFalse();
+            assertThat(baseProperties.has("digitalWallet")).isFalse();
+
+            // Second allOf member is the oneOf with one branch per member
+            JsonNode oneOf = allOf.get(1).get("oneOf");
             assertThat(oneOf).isNotNull();
             assertThat(oneOf.size()).isEqualTo(3);
 

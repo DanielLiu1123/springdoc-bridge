@@ -117,9 +117,10 @@ public class SpringDocBridgeProtobufProperties {
         /**
          * Emit each oneof group as an OpenAPI {@code oneOf}.
          *
-         * <p> Every member becomes a branch that requires exactly that field, and the group is
-         * attached to the message schema via {@code allOf} (so a message may contain multiple
-         * oneof groups). This documents the mutual exclusion between members.
+         * <p> Every member becomes a branch that requires exactly that field. The regular
+         * (non-oneof) fields and the oneof groups are composed under a single {@code allOf}
+         * (so a message may contain multiple oneof groups, and renderers keep the common fields
+         * visible next to the oneof variants). This documents the mutual exclusion between members.
          *
          * <p> Note: protobuf allows a oneof to be entirely unset ("at most one"), whereas OpenAPI
          * {@code oneOf} requires exactly one branch to match. The generated schema therefore models

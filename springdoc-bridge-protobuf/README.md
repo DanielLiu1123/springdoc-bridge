@@ -180,15 +180,15 @@ message Pet {
     required: [ name ]
   ```
 
-- **`ONE_OF`**: each oneof group is emitted as an OpenAPI `oneOf` (attached via `allOf`, so a message may contain multiple groups), documenting the mutual exclusion between members.
+- **`ONE_OF`**: each oneof group is emitted as an OpenAPI `oneOf`, documenting the mutual exclusion between members. The regular fields and the oneof groups are composed under a single `allOf` (so a message may contain multiple groups, and renderers keep the common fields visible next to the oneof variants).
 
   ```yaml
   Pet:
-    type: object
-    properties:
-      name: { type: string }
-    required: [ name ]
     allOf:
+      - type: object
+        properties:
+          name: { type: string }
+        required: [ name ]
       - oneOf:
           - { type: object, properties: { cat: { $ref: "#/components/schemas/Cat" } }, required: [ cat ] }
           - { type: object, properties: { dog: { $ref: "#/components/schemas/Dog" } }, required: [ dog ] }

@@ -224,17 +224,23 @@ class ProtobufModelConverterTest {
             var context = getModelConverterContext(SchemaNamingStrategy.SPRINGDOC, true, OneofBehavior.ONE_OF);
             var schema = resolveAnnotatedType(context, new AnnotatedType(OneofTestMessage.class));
 
-            // oneof members are no longer sibling properties
-            assertThat(schema.getProperties())
+            // Regular fields and oneof groups are composed under a single allOf so that renderers
+            // keep the common properties visible next to the oneof variants.
+            assertThat(schema.getProperties()).isNull();
+
+            // allOf = [ base object, oneOf('method'), oneOf('Source') ]
+            List<Schema> allOf = schema.getAllOf();
+            assertThat(allOf).hasSize(3);
+
+            // first allOf member holds the regular (non-oneof) fields
+            Schema<?> base = allOf.get(0);
+            assertThat(base.getProperties())
                     .containsKey("regularField")
                     .doesNotContainKeys("referralCode", "promoCode", "source1", "source2");
 
-            // one allOf entry per real oneof group ('method' and 'Source')
-            List<Schema> allOf = schema.getAllOf();
-            assertThat(allOf).hasSize(2);
-
+            // remaining allOf members are the oneof groups
             var branchRequiredFields = new java.util.ArrayList<String>();
-            for (Schema<?> group : allOf) {
+            for (Schema<?> group : allOf.subList(1, allOf.size())) {
                 List<Schema> branches = group.getOneOf();
                 // each group is a oneOf with exactly two branches
                 assertThat(branches).hasSize(2);
@@ -255,10 +261,14 @@ class ProtobufModelConverterTest {
             var context = getModelConverterContext(SchemaNamingStrategy.SPRINGDOC, true, OneofBehavior.ONE_OF);
             var schema = resolveAnnotatedType(context, new AnnotatedType(OneofTestMessage.class));
 
-            assertThat(schema.getProperties()).containsKey("nickname");
-            assertThat(schema.getRequired()).doesNotContain("nickname");
-            // only the two real oneofs produce oneOf groups, the synthetic one does not
-            assertThat(schema.getAllOf()).hasSize(2);
+            // allOf = [ base object, oneOf('method'), oneOf('Source') ]; the synthetic oneof for the
+            // proto3 'optional' field does NOT add a group, it stays a regular optional property.
+            List<Schema> allOf = schema.getAllOf();
+            assertThat(allOf).hasSize(3);
+
+            Schema<?> base = allOf.get(0);
+            assertThat(base.getProperties()).containsKey("nickname");
+            assertThat(base.getRequired()).doesNotContain("nickname");
         }
     }
 

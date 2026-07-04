@@ -145,17 +145,14 @@ public class ProtobufModelConverter implements ModelConverter {
             return new Schema<>().$ref(ref);
         }
 
-        var schema = new ObjectSchema();
-
-        if (descriptor.getOptions().getDeprecated()) {
-            schema.setDeprecated(true);
-        }
-
         var useOneOf = oneofBehavior == OneofBehavior.ONE_OF;
+        var realOneofs = useOneOf ? descriptor.getRealOneofs() : List.<Descriptors.OneofDescriptor>of();
 
+        // Object schema holding all "regular" fields: every field in FLATTEN mode, or every
+        // non-oneof field in ONE_OF mode (synthetic oneofs for proto3 'optional' have
+        // getRealContainingOneof() == null and are treated as regular fields here).
+        var objectSchema = new ObjectSchema();
         for (var field : descriptor.getFields()) {
-            // In ONE_OF mode, members of a real oneof are handled below as a dedicated oneOf group.
-            // Synthetic oneofs (proto3 'optional') have getRealContainingOneof() == null and stay here.
             if (useOneOf && field.getRealContainingOneof() != null) {
                 continue;
             }
@@ -163,20 +160,34 @@ public class ProtobufModelConverter implements ModelConverter {
             var fieldName = underlineToCamel(field.getName());
             var fieldSchema = resolveFieldSchema(cls, field, context);
 
-            schema.addProperty(fieldName, fieldSchema);
+            objectSchema.addProperty(fieldName, fieldSchema);
 
             if (!isOptional(field)) {
-                schema.addRequiredItem(fieldName);
+                objectSchema.addRequiredItem(fieldName);
             }
         }
 
-        if (useOneOf) {
-            for (var oneof : descriptor.getRealOneofs()) {
+        Schema<?> schema;
+        if (realOneofs.isEmpty()) {
+            schema = objectSchema;
+        } else {
+            // Compose the regular fields and one oneOf per oneof group under a single allOf, instead
+            // of putting oneOf/allOf as siblings of 'properties'. Keeping 'properties' at the same
+            // level as 'allOf' is valid JSON Schema, but several renderers (e.g. Redoc/Swagger UI)
+            // only render one of them and silently drop the regular properties. Nesting the regular
+            // fields as the first allOf member keeps them visible alongside the oneof variants.
+            schema = new Schema<>();
+            schema.addAllOfItem(objectSchema);
+            for (var oneof : realOneofs) {
                 schema.addAllOfItem(createSchemaForOneof(cls, oneof, context));
             }
         }
 
-        // Register the enum schema in the context
+        if (descriptor.getOptions().getDeprecated()) {
+            schema.setDeprecated(true);
+        }
+
+        // Register the schema in the context
         context.defineModel(schemaName, schema);
 
         // Return a $ref to the registered schema
