@@ -209,6 +209,44 @@ class ProtobufAppIT {
             assertThat(phoneNumbersField.get("items").has("$ref")).isTrue();
             assertThat(phoneNumbersField.has("properties")).isFalse(); // This should not exist for arrays
         }
+
+        @Test
+        @DisplayName("Oneof group is rendered as oneOf when oneof-behavior is one_of")
+        void oneofGroupIsRenderedAsOneOf() {
+            // Given (application enables 'oneof-behavior: one_of')
+            JsonNode apiDocs = getApiDocs();
+            JsonNode paymentSchema = apiDocs.get("components").get("schemas").get("payment.v1.CreatePaymentRequest");
+
+            // Then
+            assertThat(paymentSchema).isNotNull();
+
+            // Non-oneof fields stay as regular properties
+            JsonNode properties = paymentSchema.get("properties");
+            assertThat(properties.has("orderId")).isTrue();
+            assertThat(properties.has("currency")).isTrue();
+
+            // Oneof members are NOT flattened into sibling properties
+            assertThat(properties.has("creditCard")).isFalse();
+            assertThat(properties.has("bankTransfer")).isFalse();
+            assertThat(properties.has("digitalWallet")).isFalse();
+
+            // The oneof group is expressed as a single allOf -> oneOf with one branch per member
+            JsonNode allOf = paymentSchema.get("allOf");
+            assertThat(allOf).isNotNull();
+            assertThat(allOf.size()).isEqualTo(1);
+
+            JsonNode oneOf = allOf.get(0).get("oneOf");
+            assertThat(oneOf).isNotNull();
+            assertThat(oneOf.size()).isEqualTo(3);
+
+            // Each branch requires exactly its own field
+            for (JsonNode branch : oneOf) {
+                assertThat(branch.get("required").size()).isEqualTo(1);
+                String field = branch.get("required").get(0).asString();
+                assertThat(field).isIn("creditCard", "bankTransfer", "digitalWallet");
+                assertThat(branch.get("properties").has(field)).isTrue();
+            }
+        }
     }
 
     @Nested
@@ -368,6 +406,10 @@ class ProtobufAppIT {
         assertThat(schemas.has("user.v1.User.PhoneNumber")).isTrue();
         assertThat(schemas.has("user.v1.CreateUserRequest")).isTrue();
         assertThat(schemas.has("user.v1.CreateUserResponse")).isTrue();
+
+        // Oneof example schemas
+        assertThat(schemas.has("payment.v1.CreatePaymentRequest")).isTrue();
+        assertThat(schemas.has("payment.v1.CreatePaymentRequest.CreditCard")).isTrue();
     }
 
     private void verifyWellKnownTypesSchemas(JsonNode schemas) {
