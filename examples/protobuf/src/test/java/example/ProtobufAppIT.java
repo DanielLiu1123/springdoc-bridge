@@ -211,45 +211,45 @@ class ProtobufAppIT {
         }
 
         @Test
-        @DisplayName("Oneof group is rendered as oneOf when oneof-behavior is one_of")
-        void oneofGroupIsRenderedAsOneOf() {
+        @DisplayName("Oneof groups are rendered as oneOf when oneof-behavior is one_of")
+        void oneofGroupsAreRenderedAsOneOf() {
             // Given (application enables 'oneof-behavior: one_of')
             JsonNode apiDocs = getApiDocs();
-            JsonNode paymentSchema = apiDocs.get("components").get("schemas").get("payment.v1.CreatePaymentRequest");
+            JsonNode schema = apiDocs.get("components").get("schemas").get("user.v1.CreateUserRequest");
 
             // Then
-            assertThat(paymentSchema).isNotNull();
+            assertThat(schema).isNotNull();
 
-            // Regular fields and the oneof group are composed under a single allOf so that renderers
+            // Regular fields and the oneof groups are composed under a single allOf so that renderers
             // keep the common properties visible alongside the oneof variants.
-            assertThat(paymentSchema.has("properties")).isFalse();
+            assertThat(schema.has("properties")).isFalse();
 
-            JsonNode allOf = paymentSchema.get("allOf");
+            JsonNode allOf = schema.get("allOf");
             assertThat(allOf).isNotNull();
-            // allOf = [ base object with regular fields, oneOf('payment_method') ]
-            assertThat(allOf.size()).isEqualTo(2);
+            // allOf = [ base object (regular fields), oneOf('invitation'), oneOf('credential') ]
+            assertThat(allOf.size()).isEqualTo(3);
 
             // First allOf member holds the non-oneof fields
             JsonNode baseProperties = allOf.get(0).get("properties");
-            assertThat(baseProperties.has("orderId")).isTrue();
-            assertThat(baseProperties.has("currency")).isTrue();
+            assertThat(baseProperties.has("user")).isTrue();
             // Oneof members are NOT flattened into sibling properties
-            assertThat(baseProperties.has("creditCard")).isFalse();
-            assertThat(baseProperties.has("bankTransfer")).isFalse();
-            assertThat(baseProperties.has("digitalWallet")).isFalse();
+            assertThat(baseProperties.has("referralCode")).isFalse();
+            assertThat(baseProperties.has("password")).isFalse();
 
-            // Second allOf member is the oneOf with one branch per member
-            JsonNode oneOf = allOf.get(1).get("oneOf");
-            assertThat(oneOf).isNotNull();
-            assertThat(oneOf.size()).isEqualTo(3);
-
-            // Each branch requires exactly its own field
-            for (JsonNode branch : oneOf) {
-                assertThat(branch.get("required").size()).isEqualTo(1);
-                String field = branch.get("required").get(0).asString();
-                assertThat(field).isIn("creditCard", "bankTransfer", "digitalWallet");
-                assertThat(branch.get("properties").has(field)).isTrue();
+            // Remaining allOf members are the two oneof groups; each branch requires exactly its field
+            java.util.List<String> branchFields = new java.util.ArrayList<>();
+            for (int i = 1; i < allOf.size(); i++) {
+                JsonNode oneOf = allOf.get(i).get("oneOf");
+                assertThat(oneOf).isNotNull();
+                for (JsonNode branch : oneOf) {
+                    assertThat(branch.get("required").size()).isEqualTo(1);
+                    String field = branch.get("required").get(0).asString();
+                    assertThat(branch.get("properties").has(field)).isTrue();
+                    branchFields.add(field);
+                }
             }
+            // invitation (referralCode / promoCode) + credential (password / oauth)
+            assertThat(branchFields).containsExactlyInAnyOrder("referralCode", "promoCode", "password", "oauth");
         }
     }
 
@@ -411,9 +411,9 @@ class ProtobufAppIT {
         assertThat(schemas.has("user.v1.CreateUserRequest")).isTrue();
         assertThat(schemas.has("user.v1.CreateUserResponse")).isTrue();
 
-        // Oneof example schemas
-        assertThat(schemas.has("payment.v1.CreatePaymentRequest")).isTrue();
-        assertThat(schemas.has("payment.v1.CreatePaymentRequest.CreditCard")).isTrue();
+        // Oneof example schemas (nested messages of the CreateUserRequest oneof groups)
+        assertThat(schemas.has("user.v1.CreateUserRequest.PasswordCredential")).isTrue();
+        assertThat(schemas.has("user.v1.CreateUserRequest.OAuthCredential")).isTrue();
     }
 
     private void verifyWellKnownTypesSchemas(JsonNode schemas) {

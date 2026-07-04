@@ -10,5 +10,5 @@ springdoc:
 springdoc-bridge:
   protobuf:
     schema-naming-strategy: protobuf
-    # Render protobuf 'oneof' groups as OpenAPI 'oneOf' (see PaymentController).
+    # Render protobuf 'oneof' groups as OpenAPI 'oneOf' (see CreateUserRequest in user.proto).
     oneof-behavior: one_of

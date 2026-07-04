@@ -108,6 +108,32 @@ message User {
 // Request/Response messages
 message CreateUserRequest {
   User user = 1;
+
+  // Demonstrates protobuf 'oneof' -> OpenAPI 'oneOf' mapping.
+  // With 'springdoc-bridge.protobuf.oneof-behavior: one_of', each of the two
+  // oneof groups below is rendered as its own 'oneOf' under a shared 'allOf'.
+  // See: https://github.com/DanielLiu1123/springdoc-bridge/issues/23
+
+  // Exactly one invitation source (a oneof of scalar members).
+  oneof invitation {
+    string referral_code = 2;
+    string promo_code = 3;
+  }
+
+  // Exactly one initial credential (a second oneof, of message members).
+  oneof credential {
+    PasswordCredential password = 4;
+    OAuthCredential oauth = 5;
+  }
+
+  message PasswordCredential {
+    string password = 1;
+  }
+
+  message OAuthCredential {
+    string provider = 1;
+    string token = 2;
+  }
 }
 
 message CreateUserResponse {
