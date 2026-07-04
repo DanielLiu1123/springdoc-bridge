@@ -226,8 +226,8 @@ class ProtobufAppIT {
 
             JsonNode allOf = paymentSchema.get("allOf");
             assertThat(allOf).isNotNull();
-            // allOf = [ base object with regular fields, oneOf('payment_method') ]
-            assertThat(allOf.size()).isEqualTo(2);
+            // allOf = [ base object with regular fields, oneOf('payment_method'), oneOf('customer') ]
+            assertThat(allOf.size()).isEqualTo(3);
 
             // First allOf member holds the non-oneof fields
             JsonNode baseProperties = allOf.get(0).get("properties");
@@ -237,19 +237,25 @@ class ProtobufAppIT {
             assertThat(baseProperties.has("creditCard")).isFalse();
             assertThat(baseProperties.has("bankTransfer")).isFalse();
             assertThat(baseProperties.has("digitalWallet")).isFalse();
+            assertThat(baseProperties.has("customerId")).isFalse();
+            assertThat(baseProperties.has("guest")).isFalse();
 
-            // Second allOf member is the oneOf with one branch per member
-            JsonNode oneOf = allOf.get(1).get("oneOf");
-            assertThat(oneOf).isNotNull();
-            assertThat(oneOf.size()).isEqualTo(3);
-
-            // Each branch requires exactly its own field
-            for (JsonNode branch : oneOf) {
-                assertThat(branch.get("required").size()).isEqualTo(1);
-                String field = branch.get("required").get(0).asString();
-                assertThat(field).isIn("creditCard", "bankTransfer", "digitalWallet");
-                assertThat(branch.get("properties").has(field)).isTrue();
+            // Remaining allOf members are the two oneof groups; collect their branch fields
+            java.util.List<String> branchFields = new java.util.ArrayList<>();
+            for (int i = 1; i < allOf.size(); i++) {
+                JsonNode oneOf = allOf.get(i).get("oneOf");
+                assertThat(oneOf).isNotNull();
+                for (JsonNode branch : oneOf) {
+                    // Each branch requires exactly its own field
+                    assertThat(branch.get("required").size()).isEqualTo(1);
+                    String field = branch.get("required").get(0).asString();
+                    assertThat(branch.get("properties").has(field)).isTrue();
+                    branchFields.add(field);
+                }
             }
+            // payment_method (3 members) + customer (2 members)
+            assertThat(branchFields)
+                    .containsExactlyInAnyOrder("creditCard", "bankTransfer", "digitalWallet", "customerId", "guest");
         }
     }
 
