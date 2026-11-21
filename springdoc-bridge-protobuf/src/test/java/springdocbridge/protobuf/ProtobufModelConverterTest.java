@@ -5,7 +5,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.example.schema.naming.v1.SchemaNamingTestMessage;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.protobuf.Any;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
@@ -37,6 +36,7 @@ import org.springdoc.core.providers.ObjectMapperProvider;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.ResolvableType;
 import springdocbridge.protobuf.SpringDocBridgeProtobufProperties.SchemaNamingStrategy;
+import tools.jackson.databind.json.JsonMapper;
 import types.v1.DeprecatedTestMessage;
 import types.v1.EnumTestMessage;
 import types.v1.FieldNamingTestMessage;

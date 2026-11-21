@@ -1,6 +1,5 @@
 package springdocbridge.protobuf;
 
-import com.fasterxml.jackson.databind.JavaType;
 import com.google.protobuf.Any;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
@@ -47,6 +46,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import org.springdoc.core.providers.ObjectMapperProvider;
 import org.springframework.beans.BeanUtils;
+import tools.jackson.databind.JavaType;
 
 /**
  * OpenAPI model converter that provides specialized schema generation for Protocol Buffers (protobuf)
